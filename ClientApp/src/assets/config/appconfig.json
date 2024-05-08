@@ -1,0 +1,24 @@
+{
+    "environment": {
+        "name": "Local",
+        "production": false
+    },
+    "appInsights": {
+        "instrumentationKey": ""
+    },
+    "logging": {
+        "console": true,
+        "appInsights": false
+    },
+    "api": {
+        "url": "https://emrproj-01.azurewebsites.net"
+    },
+    "app": {
+        "title": "EMR Proj"
+    },
+    "buildInfo": {
+        "number": "1.0.0.0",
+        "createdOn": "Wednesday, May 08, 2024 5:48:11 AM"
+    },
+    "environments": []
+}
