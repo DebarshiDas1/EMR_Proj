@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace EMRProj.Entities
 {
+#pragma warning disable
     /// <summary> 
     /// Represents a entity entity with essential details
     /// </summary>
@@ -14,7 +15,7 @@ namespace EMRProj.Entities
         /// Foreign key referencing the Tenant to which the Entity belongs 
         /// </summary>
         [Required]
-        public Guid TenantId { get; set; }
+        public Guid? TenantId { get; set; }
 
         /// <summary>
         /// Navigation property representing the associated Tenant

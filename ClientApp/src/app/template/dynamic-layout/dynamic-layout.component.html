@@ -2,18 +2,18 @@
     <form [formGroup]="form">
         <div class="row">
             <ng-container *ngFor="let field of formFields">
-                <ng-container [ngSwitch]="field.type">
+                <ng-container [ngSwitch]="field.dataType">
 
                     <!-- Section -->
                     <div *ngSwitchCase="'section'"
-                        class="col-md-{{(field.column && field.column > 0 && field.column <= 4) ? (field.column * 3) : 12}}">
+                        class="col-md-{{(field.column && field.column >= 1 && field.column <= 12) ? field.column : 12}}">
                         <div class="cards">
                             <div class="card-title">
                                 <p *ngIf="field.showTitle !== 'false'" class="section-header tuncate-text"
-                                    #sectionHeading matTooltip={{field.name}}
+                                    #sectionHeading matTooltip={{field.label}}
                                     [matTooltipDisabled]="isTooltipDisabled(sectionHeading)">
                                     <i *ngIf="field.icon"
-                                        class="fas {{field.icon}} list-label-icon mr10"></i>{{field.name}}
+                                        class="fas {{field.icon}} list-label-icon mr10"></i>{{field.label}}
                                 </p>
                             </div>
                             <div class="cards-content">
@@ -26,7 +26,7 @@
                     <ng-container *ngSwitchDefault>
                         <!-- Inputs starts here -->
                         <div [ngSwitch]="field.dataType.toLowerCase()"
-                            class="col-md-{{(field.column && field.column > 0 && field.column <= 4) ? (field.column * 3) : 12}}">
+                            class="col-md-{{(field.column && field.column >= 1 && field.column <= 12) ? field.column : 12}}">
                             <!-- Textbox -->
                             <mat-form-field *ngSwitchDefault class="input-form-field input-flds field-pb-0"
                                 [ngClass]="field.required && !form.get(field.fieldName)?.valid ? 'required-field' : ''">

@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+using EMRProj.Services;
+using Task = System.Threading.Tasks.Task;
 
 namespace EMRProj.Controllers
 {
@@ -13,8 +17,19 @@ namespace EMRProj.Controllers
                                                                     */
     [Route("api/meta-data")]
     [Authorize]
-    public class MetaDataController : ControllerBase
+    public class MetaDataController : BaseApiController
     {
+        private readonly IJsonMessageService _jsonservice;
+
+        /// <summary>
+        /// Initializes a new instance of the MetaDataController class.
+        /// </summary>
+        /// <param name="jsonservice">jsonservice value to set.</param>
+        public MetaDataController(IJsonMessageService jsonservice)
+        {
+            _jsonservice = jsonservice;
+        }
+
         /// <summary>
         /// Retrieves and returns menu data
         /// </summary>
@@ -25,11 +40,11 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetMenu()
+        public async Task<IActionResult> GetMenu()
         {
-            string menuFilePath =  $"./Menu/Menu.yaml";
-            var dynamicYaml = System.IO.File.ReadAllText(menuFilePath);
-            var deserializer =  new DeserializerBuilder().Build();
+            string menuFilePath = $"./Menu/Menu.yaml";
+            var dynamicYaml = await System.IO.File.ReadAllTextAsync(menuFilePath);
+            var deserializer = new DeserializerBuilder().Build();
             var yamlObject = deserializer.Deserialize<dynamic>(dynamicYaml);
             return Ok(yamlObject);
         }
@@ -38,7 +53,7 @@ namespace EMRProj.Controllers
         /// Retrieves and returns layout data based on entity and layout type.
         /// </summary>
         /// <param name="entity">Entity name</param>
-        /// <param name="layoutType">Layout type as List= 1, Add= 2 and Edit= 3</param>
+        /// <param name="fileName">Layout file name</param>
         /// <returns>Returns json.</returns>
         [HttpGet]
         [Route("{entity}/layout")]
@@ -47,42 +62,75 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult GetLayout([FromRoute] string entity, [FromQuery] LayoutType layoutType)
+        public async Task<IActionResult> GetLayout([FromRoute] string entity, [FromQuery] string fileName)
         {
             if (string.IsNullOrEmpty(entity))
             {
                 return BadRequest("Entity should not be empty");
             }
 
-            if (layoutType == 0)
+            if (string.IsNullOrEmpty(fileName))
             {
-                return BadRequest("Entity's layout type should not be blank");
+                return BadRequest("Layout's file name should not be blank");
             }
 
-            string type = "";
-            switch (layoutType)
+            fileName = fileName.Contains(".yaml") ? fileName : fileName + ".yaml";
+            string layoutFilePath = $"./Layout/{entity}/{fileName}";
+            var dynamicYaml = await System.IO.File.ReadAllTextAsync(layoutFilePath);;
+            var deserializer = new DeserializerBuilder().Build();
+            if (fileName.StartsWith("List"))
+                return Ok(deserializer.Deserialize<dynamic>(dynamicYaml));
+            List<Field> yamlObject;
+            try
             {
-                case LayoutType.List:
-                    type = "List";
-                    break;
-                case LayoutType.Edit:
-                    type = "Edit";
-                    break;
-                case LayoutType.Add:
-                    type = "Add";
-                    break;
+                yamlObject = deserializer.Deserialize<List<Field>>(dynamicYaml);
+            }
+            catch
+            {
+                deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+                yamlObject = deserializer.Deserialize<List<Field>>(dynamicYaml);
             }
 
-            if (string.IsNullOrEmpty(type))
+            return _jsonservice.IgnoreNullableObject(yamlObject);
+        }
+
+        /// <summary>
+        /// Retrieves and returns layout data based on entity and layout type.
+        /// </summary>
+        /// <param name="entity">Entity name</param>
+        /// <returns>Returns json.</returns>
+        [HttpGet]
+        [Route("{entity}/layouts")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [Produces("application/json")]
+        public IActionResult GetAllLayout([FromRoute] string entity)
+        {
+            if (string.IsNullOrEmpty(entity))
             {
-                return BadRequest("Invalid layout type");
+                return BadRequest("Entity should not be empty");
             }
 
-            string layoutFilePath = $"./Layout/{entity}/{type}.yaml";
-            var dynamicYaml = System.IO.File.ReadAllText(layoutFilePath);
-            var deserializer =  new DeserializerBuilder().Build();
-            var yamlObject = deserializer.Deserialize<dynamic>(dynamicYaml);
-            return Ok(yamlObject);
+            var directoryPath = $"./Layout/{entity}/";
+            List<FileDetails> files = new List<FileDetails>();
+            if (Directory.Exists(directoryPath))
+            {
+                var item = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+                foreach (var file in item)
+                {
+                    var fileName = Path.GetFileName(file);
+                    var fileType = Path.GetExtension(file).TrimStart('.');
+                    files.Add(new FileDetails { Id = fileName.Split(".")[0], Name = fileName, FileType = fileType });
+                }
+            }
+            else
+            {
+                return BadRequest("The directory does not exist.");
+            }
+
+            return Ok(files);
         }
     }
 }

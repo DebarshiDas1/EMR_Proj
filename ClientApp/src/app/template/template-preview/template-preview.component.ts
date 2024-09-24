@@ -29,7 +29,7 @@ export class TemplatePreviewComponent implements OnDestroy {
 
   editRecord(): void {
     const dialog = this.dialog.open(TemplateAddComponent, {
-      width: '50vw',
+      width: '73vw',
       height: '100vh',
       position: {
         top: '0px',

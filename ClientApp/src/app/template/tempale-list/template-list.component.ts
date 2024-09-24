@@ -77,6 +77,7 @@ export class TemplateListComponent implements OnInit, OnChanges, OnDestroy {
         selectedDiv?.scrollIntoView(inline);
       }
     }, 100);
+    this.generateRandomClasses();
   }
 
   ngOnDestroy(): void {
@@ -87,7 +88,7 @@ export class TemplateListComponent implements OnInit, OnChanges, OnDestroy {
 
   public addRecord(): void {
     const dialog = this.dialog.open(TemplateAddComponent, {
-      width: '50vw',
+      width: '73vw',
       height: '100vh',
       position: {
         top: '0px',
@@ -142,7 +143,7 @@ export class TemplateListComponent implements OnInit, OnChanges, OnDestroy {
 
   public editRecordById(id: string): void {
     const dialog = this.dialog.open(TemplateAddComponent, {
-      width: '50vw',
+      width: '73vw',
       height: '100vh',
       position: {
         top: '0px',
@@ -171,6 +172,19 @@ export class TemplateListComponent implements OnInit, OnChanges, OnDestroy {
           }
         }
       });
+  }
+
+  private generateRandomClasses(): void {
+    const numClasses = 9,
+      classes = Array.from({ length: numClasses }, (_, index) => `color-${index + 1}`);
+    this.mappedData.forEach(record => {
+      const randomIndex = Math.floor(Math.random() * classes.length);
+      record.randomClass = classes[randomIndex];
+    });
+  }
+
+  public getRandomClass(record: any): string {
+    return record.randomClass;
   }
 
   public truncateText(text: string): string {
@@ -262,7 +276,6 @@ export class TemplateListComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private initializeDropDownFields(): void {
-    console.log(this.fieldOptions);
     const guidFields = this.filterFields?.filter(field => field.dataType?.toLowerCase() === 'guid');
     guidFields?.forEach(field => {
       this.form?.get(field.fieldName + '_search')?.valueChanges
@@ -275,12 +288,12 @@ export class TemplateListComponent implements OnInit, OnChanges, OnDestroy {
           takeUntil(this.destroy)
         ).subscribe({
           next: (search) => {
-            this.getOptions(field.dataSource, field.fieldName, search, true);
+            this.getOptions(field.entityName, field.fieldName, search, true);
           }
         });
     });
     const guidData = guidFields?.filter(field => this.form?.get(field.fieldName)?.value);
-    guidData?.map(field => { return this.getOptions(field.dataSource, field.fieldName, this.form?.get(field.fieldName)?.value, false); });
+    guidData?.map(field => { return this.getOptions(field.entityName, field.fieldName, this.form?.get(field.fieldName)?.value, false); });
   }
 
   private setRefreshData(): void {

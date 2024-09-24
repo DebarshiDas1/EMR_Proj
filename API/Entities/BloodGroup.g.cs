@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace EMRProj.Entities
 {
+#pragma warning disable
     /// <summary> 
     /// Represents a bloodgroup entity with essential details
     /// </summary>

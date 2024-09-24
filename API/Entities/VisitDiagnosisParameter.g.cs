@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace EMRProj.Entities
 {
+#pragma warning disable
     /// <summary> 
     /// Represents a visitdiagnosisparameter entity with essential details
     /// </summary>

@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace EMRProj.Models
 {
+#pragma warning disable
     /// <summary> 
     /// Represents a registerviewmodel entity with essential details
     /// </summary>
@@ -44,6 +45,6 @@ namespace EMRProj.Models
         /// Required field TenantId of the RegisterViewModel 
         /// </summary>
         [Required]
-        public Guid TenantId { get; set; }
+        public Guid? TenantId { get; set; }
     }
 }

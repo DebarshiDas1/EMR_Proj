@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace EMRProj.Models
 {
+#pragma warning disable
     /// <summary> 
     /// Represents a claimrolemodel entity with essential details
     /// </summary>

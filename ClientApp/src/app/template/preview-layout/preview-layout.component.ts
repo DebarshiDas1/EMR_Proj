@@ -14,7 +14,7 @@ export class PreviewLayoutComponent {
     ) { }
 
     public getColumnClass(column: number): string {
-        return `col-md-${(column && column > 0 && column <= 4) ? (column * 3) : 12}`;
+        return `col-md-${(column && column >= 1 && column <= 12) ? column : 12}`;
     }
 
     public isTooltipDisabled(element: HTMLElement): boolean {

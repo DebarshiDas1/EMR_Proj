@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing specialisation-related operations in the API.
+    /// Controller responsible for managing specialisation related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting specialisation information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting specialisation information.
     /// </remarks>
     [Route("api/specialisation")]
     [Authorize]
-    public class SpecialisationController : ControllerBase
+    public class SpecialisationController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly ISpecialisationService _specialisationService;
 
-        public SpecialisationController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the SpecialisationController class with the specified context.
+        /// </summary>
+        /// <param name="ispecialisationservice">The ispecialisationservice to be used by the controller.</param>
+        public SpecialisationController(ISpecialisationService ispecialisationservice)
         {
-            _context = context;
+            _specialisationService = ispecialisationservice;
         }
 
-        /// <summary>Adds a new specialisation to the database</summary>
+        /// <summary>Adds a new specialisation</summary>
         /// <param name="model">The specialisation data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("Specialisation",Entitlements.Create)]
-        public IActionResult Post([FromBody] Specialisation model)
+        [UserAuthorize("Specialisation", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] Specialisation model)
         {
-            _context.Specialisation.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            var id = await _specialisationService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of specialisations based on specified filters</summary>
@@ -52,13 +57,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of specialisations</returns>
         [HttpGet]
-        [UserAuthorize("Specialisation",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("Specialisation", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +81,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.Specialisation.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<Specialisation>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(Specialisation), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<Specialisation, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _specialisationService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific specialisation by its primary key</summary>
         /// <param name="id">The primary key of the specialisation</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The specialisation data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("Specialisation",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("Specialisation", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.Specialisation.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _specialisationService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific specialisation by its primary key</summary>
         /// <param name="id">The primary key of the specialisation</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("Specialisation",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("Specialisation", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.Specialisation.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.Specialisation.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _specialisationService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +124,22 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The specialisation data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("Specialisation",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] Specialisation updatedEntity)
+        [UserAuthorize("Specialisation", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] Specialisation updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.Specialisation.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            var status = await _specialisationService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +148,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The specialisation data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("Specialisation",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +155,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<Specialisation> updatedEntity)
+        [UserAuthorize("Specialisation", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<Specialisation> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.Specialisation.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.Specialisation.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _specialisationService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }

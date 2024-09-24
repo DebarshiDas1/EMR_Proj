@@ -1,11 +1,11 @@
 .main-left-list-sec {
-  //background-color: var(--main-bg);
+  background-color: var(--list-page-bg);
   width: 100%;
   min-width: 445px;
   // max-width: 445px;
   // height: 100vh;
   padding: 25px 0 0 25px;
-  border-right: 1px solid var(--border-color-dark);
+  border-right: 1px solid var(--primary-border-color);
 
   @include desktop-xl {
     min-width: 350px;
@@ -52,12 +52,13 @@
   }
 
   .list-card-item {
-    background: $white;
+    // background: $white;
+    background-color: var(--list-page-bg);
     display: flex;
     // max-width: calc(100% - 25px);
-    max-width: 392px;
-    padding: 10px 20px;
-    border: 1px solid $border-color;
+    max-width: 437px;
+    padding: 15px 20px;
+    border: 1px solid var(--primary-border-color);
     // box-shadow: 0 1px 2px rgba(56, 65, 74, 0.05);
     box-shadow: 0px 3px 4px 0px rgba(0, 0, 0, 0.03);
     border-radius: 5px;
@@ -76,7 +77,7 @@
       margin-right: 25px;
       // max-width: 100%;
       border: 1px solid $primary-color-lighter;
-      box-shadow: rgba(138, 197, 255, 0.25) 0px 6px 12px -2px, rgba(138, 197, 255, 0.3) 0px 3px 7px -3px;
+      box-shadow: var(--selected-box-shadow);
       // border-color: var(--primary-color);
       // border-right-color: transparent;
 

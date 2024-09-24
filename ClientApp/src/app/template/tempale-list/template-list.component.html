@@ -40,7 +40,7 @@
                 </div>
                 <form *ngIf="form && filterFields" [formGroup]="form" autocomplete="off" (ngSubmit)="onSearch()">
                     <div class="row">
-                        <div class="form-group row-item-full col-md-{{(field.column && field.column > 0 && field.column <= 4) ? (field.column * 3) : 12}}"
+                        <div class="form-group row-item-full col-md-{{(field.column && field.column >= 1 && field.column <= 12) ? field.column : 12}}"
                             *ngFor="let field of filterFields">
                             <ng-container [ngSwitch]="field.dataType.toLowerCase()">
                                 <mat-form-field *ngSwitchDefault class="input-form-field" appearance="fill">
@@ -152,6 +152,13 @@
                 <a href="javascript:void(0)" class="list-card-item patient-list-item"
                     *ngFor="let record of mappedData; let i=index;" (click)="previewSpecificRecord(i)"
                     [ngClass]="{'card-active': i===selectedIndex}" id="div-{{i}}">
+                    <ng-container *ngFor="let title of record.cardTitle?.fields">
+                        <div class="dp-box" *ngIf="title.showInitialCharacter !== 'false'">
+                            <div class="dp-box-icon" [ngClass]="getRandomClass(record)">
+                                <span class="dp-text">{{ title.value.charAt(0) }}</span>
+                            </div>
+                        </div>
+                    </ng-container>
                     <div class="list-card-item-content flex-nowrap">
                         <div class="d-flex justify-content-between align-items-start w-100 mb-2">
                             <div class="col tuncate-text">
@@ -198,8 +205,9 @@
                         <div class="row status-area">
                             <ng-container *ngFor="let detail of record.cardDetail?.fields">
                                 <div *ngIf="detail.value"
-                                    class="pb-2 col-md-{{(detail.column && detail.column > 0 && detail.column <= 4) ? (detail.column * 3) : 12}}"
-                                    [ngClass]="!detail.icon ? 'd-flex flex-column' : ''" style="color: var(--color-4);">
+                                    class="pb-2 col-md-{{(detail.column && detail.column >= 1 && detail.column <= 12) ? detail.column : 12}}"
+                                    [ngClass]="!detail.icon ? 'd-flex flex-column' : 'tuncate-text'"
+                                    style="color: var(--color-4);">
                                     <span *ngIf="!detail.icon" #listLabel matTooltip={{detail.label}}
                                         [matTooltipDisabled]="isTooltipDisabled(listLabel)"
                                         class="font-body-medium text-truncate list-info-label me-1">{{

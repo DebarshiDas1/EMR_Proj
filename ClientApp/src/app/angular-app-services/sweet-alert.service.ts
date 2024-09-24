@@ -10,6 +10,8 @@ export class SweetAlertService {
             title: 'Are you sure?',
             text: 'You won\'t be able to revert this!',
             icon: 'warning',
+            background: 'var(--main-bg)',
+            color: 'var(--color-4)',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',

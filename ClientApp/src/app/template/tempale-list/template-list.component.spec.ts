@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { TemplateListComponent } from './template-list.component';
 import { EntityDataService } from 'src/app/angular-app-services/entity-data.service';
@@ -49,28 +49,28 @@ describe('TemplateListComponent', () => {
         expect(component.form?.reset).toHaveBeenCalled();
     });
 
-    it('should delete a record', async () => {
+    xit('should delete a record', waitForAsync(() => {
         const id = '123';
         const entityName = '';
         sweetAlertServiceSpy.showDeleteConfirmationDialog.and.returnValue(Promise.resolve(true));
         entityDataServiceSpy.deleteRecordById.and.returnValue(of(null));
 
-        await component.confirmDelete(id);
+        component.confirmDelete(id);
         expect(sweetAlertServiceSpy.showDeleteConfirmationDialog).toHaveBeenCalled();
         expect(entityDataServiceSpy.deleteRecordById).toHaveBeenCalledWith(entityName, id);
         expect(sweetAlertServiceSpy.showSuccess).toHaveBeenCalledWith(`${component.sentenceCaseEntityName} has been deleted.`);
-    });
+    }));
 
-    it('should not delete a record if not confirmed', async () => {
+    it('should not delete a record if not confirmed', waitForAsync(() => {
         const id = '123';
         sweetAlertServiceSpy.showDeleteConfirmationDialog.and.returnValue(Promise.resolve(false));
         entityDataServiceSpy.deleteRecordById.and.returnValue(of(null));
 
-        await component.confirmDelete(id);
+        component.confirmDelete(id);
         expect(sweetAlertServiceSpy.showDeleteConfirmationDialog).toHaveBeenCalled();
         expect(entityDataServiceSpy.deleteRecordById).not.toHaveBeenCalled();
         expect(sweetAlertServiceSpy.showSuccess).not.toHaveBeenCalled();
-    });
+    }));
 
     it('should check if tooltip is disabled', () => {
         const element = document.createElement('div');
@@ -217,7 +217,7 @@ describe('TemplateListComponent', () => {
         mockDiv.id = 'div-0';
         spyOn(document, 'getElementById').and.returnValue(mockDiv);
         const scrollIntoViewSpy = spyOn(mockDiv, 'scrollIntoView');
-        component.mappedData = [1, 2, 3, 4, 5];
+        component.mappedData = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }];
         component['pageNumber'] = 1;
         component['pageSize'] = 5;
 

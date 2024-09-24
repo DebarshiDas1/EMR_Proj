@@ -5,25 +5,85 @@ namespace EMRProj.Services
     using EMRProj.Entities;
     using EMRProj.Models;
 
+    /// <summary>
+    /// Interface of UserAuthenticationService
+    /// </summary>
     public interface IUserAuthenticationService
     {
+        /// <summary>
+        /// It will create user
+        /// </summary>
+        /// <param name = "model">object of User</param>
+        /// <returns>bool as true or false</returns>
         bool CreateUser(User model);
-        User? GetUser(Guid? id, string username);
+        /// <summary>
+        /// It will return user by id or userName
+        /// </summary>
+        /// <param name = "id">id</param>
+        /// <param name = "username">user-name</param>
+        /// <returns>object of User</returns>
+        User GetUser(Guid? id, string username);
+        /// <summary>
+        /// It will validate User exist or not
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "username">user-name</param>
+        /// <param name = "emailId">user email id</param>
+        /// <returns>bool as true or false</returns>
         bool UserExist(Guid tenantId, string username, string emailId);
+        /// <summary>
+        /// It will create refresh token for an user
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "userId">user id</param>
+        /// <param name = "token">token</param>
+        /// <returns>bool as true or false</returns>
         bool CreateRefreshTokenByUser(Guid tenantId, Guid userId, string token);
+        /// <summary>
+        /// It will update refresh token 
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "refreshTokenId">refresh token id</param>
+        /// <param name = "userId">user id</param>
+        /// <param name = "token">token</param>
+        /// <returns>bool as true or false</returns>
         bool UpdateRefreshTokenByUser(Guid tenantId, Guid refreshTokenId, Guid userId, string token);
+        /// <summary>
+        /// It will validate refresh token exist or not
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "token">token</param>
+        /// <param name = "userId">user id</param>
+        /// <returns>guid</returns>
         Guid? RefreshTokenExist(Guid tenantId, string token, Guid userId);
+        /// <summary>
+        /// It will return ACL data by user id
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "userId">user id</param>
+        /// <returns>list of CliamRole model</returns>
         List<ClaimRoleModel> GetUserACL(Guid tenantId, Guid userId);
     }
 
+    /// <summary>
+    /// Implementation of UserAuthenticationService
+    /// </summary>
     public class UserAuthenticationService : IUserAuthenticationService
     {
         private EMRProjContext _dbContext;
+        /// <summary>
+        ///  Constructor of UserAuthenticationService
+        /// </summary>
         public UserAuthenticationService(EMRProjContext dbContext)
         {
             _dbContext = dbContext;
         }
 
+        /// <summary>
+        /// It will create user
+        /// </summary>
+        /// <param name = "model">object of User</param>
+        /// <returns>bool as true or false</returns>
         public bool CreateUser(User model)
         {
             if (model != null)
@@ -38,18 +98,39 @@ namespace EMRProj.Services
             return false;
         }
 
-        public User? GetUser(Guid? id, string username)
+        /// <summary>
+        /// It will return user by id or userName
+        /// </summary>
+        /// <param name = "id">id</param>
+        /// <param name = "username">user-name</param>
+        /// <returns>object of User</returns>
+        public User GetUser(Guid? id, string username)
         {
             if (id == null && !string.IsNullOrEmpty(username))
                 return _dbContext.User.FirstOrDefault(u => u.UserName == username);
             return _dbContext.User.FirstOrDefault(u => u.Id == id);
         }
 
+        /// <summary>
+        /// It will validate User exist or not
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "username">user-name</param>
+        /// <param name = "emailId">user email id</param>
+        /// <returns>bool as true or false</returns>
         public bool UserExist(Guid tenantId, string username, string emailId)
         {
             return _dbContext.User.Any(u => u.EmailId == emailId || u.UserName == username && u.TenantId == tenantId);
         }
 
+        /// <summary>
+        /// It will update refresh token 
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "refreshTokenId">refresh token id</param>
+        /// <param name = "userId">user id</param>
+        /// <param name = "token">token</param>
+        /// <returns>bool as true or false</returns>
         public bool UpdateRefreshTokenByUser(Guid tenantId, Guid refreshTokenId, Guid userId, string token)
         {
             UserToken model = new UserToken
@@ -64,6 +145,13 @@ namespace EMRProj.Services
             return true;
         }
 
+        /// <summary>
+        /// It will create refresh token for an user
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "userId">user id</param>
+        /// <param name = "token">token</param>
+        /// <returns>bool as true or false</returns>
         public bool CreateRefreshTokenByUser(Guid tenantId, Guid userId, string token)
         {
             UserToken model = new UserToken
@@ -79,11 +167,24 @@ namespace EMRProj.Services
             return true;
         }
 
+        /// <summary>
+        /// It will validate refresh token exist or not
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "token">token</param>
+        /// <param name = "userId">user id</param>
+        /// <returns>guid</returns>
         public Guid? RefreshTokenExist(Guid tenantId, string token, Guid userId)
         {
             return _dbContext.UserToken.FirstOrDefault(u => u.TenantId == tenantId && u.RefershToken == token && u.UserId == userId)?.Id;
         }
 
+        /// <summary>
+        /// It will return ACL data by user id
+        /// </summary>
+        /// <param name = "tenantId">tenant id</param>
+        /// <param name = "userId">user id</param>
+        /// <returns>list of CliamRole model</returns>
         public List<ClaimRoleModel> GetUserACL(Guid tenantId, Guid userId)
         {
             List<ClaimRoleModel> data = new List<ClaimRoleModel>();

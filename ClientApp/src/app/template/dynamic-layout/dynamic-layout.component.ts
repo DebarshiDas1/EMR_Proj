@@ -73,11 +73,11 @@ export class DynamicLayoutComponent implements OnInit, OnDestroy {
           takeUntil(this.destroy)
         ).subscribe({
           next: (search) => {
-            this.getOptions(field.dataSource, field.fieldName, search, true);
+            this.getOptions(field.entityName, field.fieldName, search, true);
           }
         });
     });
     const guidData = guidFields?.filter(field => this.form.get(field.fieldName)?.value);
-    guidData?.map(field => { return this.getOptions(field.dataSource, field.fieldName, this.form.get(field.fieldName)?.value, false); });
+    guidData?.map(field => { return this.getOptions(field.entityName, field.fieldName, this.form.get(field.fieldName)?.value, false); });
   }
 }

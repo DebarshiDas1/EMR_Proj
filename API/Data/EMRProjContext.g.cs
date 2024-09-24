@@ -3,13 +3,24 @@ using EMRProj.Entities;
 
 namespace EMRProj.Data
 {
+    /// <summary>
+    /// Represents the database context for the application.
+    /// </summary>
     public class EMRProjContext : DbContext
     {
+        /// <summary>
+        /// Configures the database connection options.
+        /// </summary>
+        /// <param name="optionsBuilder">The options builder used to configure the database connection.</param>
         protected override void OnConfiguring(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer("Data Source=DESKTOP-7723PEB\\SQLEXPRESS;Initial Catalog=T631688_EMR_Proj;Persist Security Info=True;user id=sa;password=qwerty123;Integrated Security=false;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=true;");
         }
 
+        /// <summary>
+        /// Configures the model relationships and entity mappings.
+        /// </summary>
+        /// <param name="modelBuilder">The model builder used to configure the database model.</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<UserInRole>().HasKey(a => a.Id);
@@ -62,7 +73,7 @@ namespace EMRProj.Data
             modelBuilder.Entity<Notification>().HasKey(a => a.Id);
             modelBuilder.Entity<AppointmentReminderLog>().HasKey(a => a.Id);
             modelBuilder.Entity<AccountSettlement>().HasKey(a => a.Id);
-            modelBuilder.Entity<AppointmentService>().HasKey(a => a.Id);
+            modelBuilder.Entity<Entities.AppointmentService>().HasKey(a => a.Id);
             modelBuilder.Entity<Payment>().HasKey(a => a.Id);
             modelBuilder.Entity<PaymentMode>().HasKey(a => a.Id);
             modelBuilder.Entity<VisitInvestigation>().HasKey(a => a.Id);
@@ -280,8 +291,8 @@ namespace EMRProj.Data
             modelBuilder.Entity<AccountSettlement>().HasOne(a => a.AppointmentId_Appointment).WithMany().HasForeignKey(c => c.AppointmentId);
             modelBuilder.Entity<AccountSettlement>().HasOne(a => a.InvoiceId_Invoice).WithMany().HasForeignKey(c => c.InvoiceId);
             modelBuilder.Entity<AccountSettlement>().HasOne(a => a.Currency_Currency).WithMany().HasForeignKey(c => c.Currency);
-            modelBuilder.Entity<AppointmentService>().HasOne(a => a.AppointmentId_Appointment).WithMany().HasForeignKey(c => c.AppointmentId);
-            modelBuilder.Entity<AppointmentService>().HasOne(a => a.Service_Product).WithMany().HasForeignKey(c => c.Service);
+            modelBuilder.Entity<Entities.AppointmentService>().HasOne(a => a.AppointmentId_Appointment).WithMany().HasForeignKey(c => c.AppointmentId);
+            modelBuilder.Entity<Entities.AppointmentService>().HasOne(a => a.Service_Product).WithMany().HasForeignKey(c => c.Service);
             modelBuilder.Entity<Payment>().HasOne(a => a.PatientId_Patient).WithMany().HasForeignKey(c => c.PatientId);
             modelBuilder.Entity<Payment>().HasOne(a => a.InvoiceId_Invoice).WithMany().HasForeignKey(c => c.InvoiceId);
             modelBuilder.Entity<Payment>().HasOne(a => a.PaymentModeId_PaymentMode).WithMany().HasForeignKey(c => c.PaymentModeId);
@@ -413,116 +424,559 @@ namespace EMRProj.Data
             modelBuilder.Entity<Location>().HasOne(a => a.CountryId_Country).WithMany().HasForeignKey(c => c.CountryId);
         }
 
+        /// <summary>
+        /// Represents the database set for the UserInRole entity.
+        /// </summary>
         public DbSet<UserInRole> UserInRole { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the UserToken entity.
+        /// </summary>
         public DbSet<UserToken> UserToken { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the RoleEntitlement entity.
+        /// </summary>
         public DbSet<RoleEntitlement> RoleEntitlement { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Entity entity.
+        /// </summary>
         public DbSet<Entity> Entity { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Tenant entity.
+        /// </summary>
         public DbSet<Tenant> Tenant { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the User entity.
+        /// </summary>
         public DbSet<User> User { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Role entity.
+        /// </summary>
         public DbSet<Role> Role { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Patient entity.
+        /// </summary>
         public DbSet<Patient> Patient { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Doctor entity.
+        /// </summary>
         public DbSet<Doctor> Doctor { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Appointment entity.
+        /// </summary>
         public DbSet<Appointment> Appointment { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Visit entity.
+        /// </summary>
         public DbSet<Visit> Visit { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the DayVisit entity.
+        /// </summary>
         public DbSet<DayVisit> DayVisit { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Diagnosis entity.
+        /// </summary>
         public DbSet<Diagnosis> Diagnosis { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Dispense entity.
+        /// </summary>
         public DbSet<Dispense> Dispense { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the BloodGroup entity.
+        /// </summary>
         public DbSet<BloodGroup> BloodGroup { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PregnancyHistory entity.
+        /// </summary>
         public DbSet<PregnancyHistory> PregnancyHistory { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientNotes entity.
+        /// </summary>
         public DbSet<PatientNotes> PatientNotes { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientAllergy entity.
+        /// </summary>
         public DbSet<PatientAllergy> PatientAllergy { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientLifeStyle entity.
+        /// </summary>
         public DbSet<PatientLifeStyle> PatientLifeStyle { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientEnrollmentLink entity.
+        /// </summary>
         public DbSet<PatientEnrollmentLink> PatientEnrollmentLink { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientHospitalisationHistory entity.
+        /// </summary>
         public DbSet<PatientHospitalisationHistory> PatientHospitalisationHistory { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientMedicalHistoryNote entity.
+        /// </summary>
         public DbSet<PatientMedicalHistoryNote> PatientMedicalHistoryNote { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientPregnancy entity.
+        /// </summary>
         public DbSet<PatientPregnancy> PatientPregnancy { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientStatistics entity.
+        /// </summary>
         public DbSet<PatientStatistics> PatientStatistics { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientCategory entity.
+        /// </summary>
         public DbSet<PatientCategory> PatientCategory { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientComorbidity entity.
+        /// </summary>
         public DbSet<PatientComorbidity> PatientComorbidity { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientPayor entity.
+        /// </summary>
         public DbSet<PatientPayor> PatientPayor { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitMedicalCertificate entity.
+        /// </summary>
         public DbSet<VisitMedicalCertificate> VisitMedicalCertificate { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the DispenseActivityHistory entity.
+        /// </summary>
         public DbSet<DispenseActivityHistory> DispenseActivityHistory { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the DispenseItem entity.
+        /// </summary>
         public DbSet<DispenseItem> DispenseItem { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PatientPharmacyQueue entity.
+        /// </summary>
         public DbSet<PatientPharmacyQueue> PatientPharmacyQueue { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Medication entity.
+        /// </summary>
         public DbSet<Medication> Medication { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the DrugListItems entity.
+        /// </summary>
         public DbSet<DrugListItems> DrugListItems { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the DoctorFavouriteMedication entity.
+        /// </summary>
         public DbSet<DoctorFavouriteMedication> DoctorFavouriteMedication { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the MedicationComposition entity.
+        /// </summary>
         public DbSet<MedicationComposition> MedicationComposition { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the DispenseItemDosage entity.
+        /// </summary>
         public DbSet<DispenseItemDosage> DispenseItemDosage { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the MedicationDosage entity.
+        /// </summary>
         public DbSet<MedicationDosage> MedicationDosage { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the DoctorInvestigation entity.
+        /// </summary>
         public DbSet<DoctorInvestigation> DoctorInvestigation { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Investigation entity.
+        /// </summary>
         public DbSet<Investigation> Investigation { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitVitalTemplateParameter entity.
+        /// </summary>
         public DbSet<VisitVitalTemplateParameter> VisitVitalTemplateParameter { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitGuideline entity.
+        /// </summary>
         public DbSet<VisitGuideline> VisitGuideline { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitDiagnosis entity.
+        /// </summary>
         public DbSet<VisitDiagnosis> VisitDiagnosis { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitDiagnosisParameter entity.
+        /// </summary>
         public DbSet<VisitDiagnosisParameter> VisitDiagnosisParameter { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitType entity.
+        /// </summary>
         public DbSet<VisitType> VisitType { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitMode entity.
+        /// </summary>
         public DbSet<VisitMode> VisitMode { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitChiefComplaint entity.
+        /// </summary>
         public DbSet<VisitChiefComplaint> VisitChiefComplaint { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PaymentGateway entity.
+        /// </summary>
         public DbSet<PaymentGateway> PaymentGateway { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Notification entity.
+        /// </summary>
         public DbSet<Notification> Notification { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the AppointmentReminderLog entity.
+        /// </summary>
         public DbSet<AppointmentReminderLog> AppointmentReminderLog { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the AccountSettlement entity.
+        /// </summary>
         public DbSet<AccountSettlement> AccountSettlement { get; set; }
-        public DbSet<AppointmentService> AppointmentService { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the AppointmentService entity.
+        /// </summary>
+        public DbSet<Entities.AppointmentService> AppointmentService { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Payment entity.
+        /// </summary>
         public DbSet<Payment> Payment { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PaymentMode entity.
+        /// </summary>
         public DbSet<PaymentMode> PaymentMode { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitInvestigation entity.
+        /// </summary>
         public DbSet<VisitInvestigation> VisitInvestigation { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Product entity.
+        /// </summary>
         public DbSet<Product> Product { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ProductBatch entity.
+        /// </summary>
         public DbSet<ProductBatch> ProductBatch { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the FinanceSetting entity.
+        /// </summary>
         public DbSet<FinanceSetting> FinanceSetting { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ProductUom entity.
+        /// </summary>
         public DbSet<ProductUom> ProductUom { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GstSettings entity.
+        /// </summary>
         public DbSet<GstSettings> GstSettings { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Invoice entity.
+        /// </summary>
         public DbSet<Invoice> Invoice { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the InvoiceLine entity.
+        /// </summary>
         public DbSet<InvoiceLine> InvoiceLine { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the InvoiceFile entity.
+        /// </summary>
         public DbSet<InvoiceFile> InvoiceFile { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ProductClassification entity.
+        /// </summary>
         public DbSet<ProductClassification> ProductClassification { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ProductManufacture entity.
+        /// </summary>
         public DbSet<ProductManufacture> ProductManufacture { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Formulation entity.
+        /// </summary>
         public DbSet<Formulation> Formulation { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Generic entity.
+        /// </summary>
         public DbSet<Generic> Generic { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the RouteInfo entity.
+        /// </summary>
         public DbSet<RouteInfo> RouteInfo { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Procedure entity.
+        /// </summary>
         public DbSet<Procedure> Procedure { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ProductCategory entity.
+        /// </summary>
         public DbSet<ProductCategory> ProductCategory { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ChiefComplaint entity.
+        /// </summary>
         public DbSet<ChiefComplaint> ChiefComplaint { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the VisitChiefComplaintParameter entity.
+        /// </summary>
         public DbSet<VisitChiefComplaintParameter> VisitChiefComplaintParameter { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ClinicalParameter entity.
+        /// </summary>
         public DbSet<ClinicalParameter> ClinicalParameter { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ClinicalParameterValue entity.
+        /// </summary>
         public DbSet<ClinicalParameterValue> ClinicalParameterValue { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Uom entity.
+        /// </summary>
         public DbSet<Uom> Uom { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the TokenManagement entity.
+        /// </summary>
         public DbSet<TokenManagement> TokenManagement { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReceipt entity.
+        /// </summary>
         public DbSet<GoodsReceipt> GoodsReceipt { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReceiptPurchaseOrderRelation entity.
+        /// </summary>
         public DbSet<GoodsReceiptPurchaseOrderRelation> GoodsReceiptPurchaseOrderRelation { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReceiptFile entity.
+        /// </summary>
         public DbSet<GoodsReceiptFile> GoodsReceiptFile { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReceiptActivityHistory entity.
+        /// </summary>
         public DbSet<GoodsReceiptActivityHistory> GoodsReceiptActivityHistory { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReceiptItem entity.
+        /// </summary>
         public DbSet<GoodsReceiptItem> GoodsReceiptItem { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReturn entity.
+        /// </summary>
         public DbSet<GoodsReturn> GoodsReturn { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the SubReason entity.
+        /// </summary>
         public DbSet<SubReason> SubReason { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReturnItem entity.
+        /// </summary>
         public DbSet<GoodsReturnItem> GoodsReturnItem { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the GoodsReturnFile entity.
+        /// </summary>
         public DbSet<GoodsReturnFile> GoodsReturnFile { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PriceList entity.
+        /// </summary>
         public DbSet<PriceList> PriceList { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PriceListVersion entity.
+        /// </summary>
         public DbSet<PriceListVersion> PriceListVersion { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PriceListItem entity.
+        /// </summary>
         public DbSet<PriceListItem> PriceListItem { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PriceListComponent entity.
+        /// </summary>
         public DbSet<PriceListComponent> PriceListComponent { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PurchaseOrder entity.
+        /// </summary>
         public DbSet<PurchaseOrder> PurchaseOrder { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PurchaseOrderLine entity.
+        /// </summary>
         public DbSet<PurchaseOrderLine> PurchaseOrderLine { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the PurchaseOrderFile entity.
+        /// </summary>
         public DbSet<PurchaseOrderFile> PurchaseOrderFile { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Requisition entity.
+        /// </summary>
         public DbSet<Requisition> Requisition { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the RequisitionLine entity.
+        /// </summary>
         public DbSet<RequisitionLine> RequisitionLine { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the RequisitionFile entity.
+        /// </summary>
         public DbSet<RequisitionFile> RequisitionFile { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the StockAdjustment entity.
+        /// </summary>
         public DbSet<StockAdjustment> StockAdjustment { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the StockAdjustmentItem entity.
+        /// </summary>
         public DbSet<StockAdjustmentItem> StockAdjustmentItem { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the StockAdjustmentFile entity.
+        /// </summary>
         public DbSet<StockAdjustmentFile> StockAdjustmentFile { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the State entity.
+        /// </summary>
         public DbSet<State> State { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the City entity.
+        /// </summary>
         public DbSet<City> City { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Specialisation entity.
+        /// </summary>
         public DbSet<Specialisation> Specialisation { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Qualification entity.
+        /// </summary>
         public DbSet<Qualification> Qualification { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Comorbidity entity.
+        /// </summary>
         public DbSet<Comorbidity> Comorbidity { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the ContactMember entity.
+        /// </summary>
         public DbSet<ContactMember> ContactMember { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Gender entity.
+        /// </summary>
         public DbSet<Gender> Gender { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Title entity.
+        /// </summary>
         public DbSet<Title> Title { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Address entity.
+        /// </summary>
         public DbSet<Address> Address { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Country entity.
+        /// </summary>
         public DbSet<Country> Country { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Language entity.
+        /// </summary>
         public DbSet<Language> Language { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Currency entity.
+        /// </summary>
         public DbSet<Currency> Currency { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Location entity.
+        /// </summary>
         public DbSet<Location> Location { get; set; }
+
+        /// <summary>
+        /// Represents the database set for the Membership entity.
+        /// </summary>
         public DbSet<Membership> Membership { get; set; }
     }
 }

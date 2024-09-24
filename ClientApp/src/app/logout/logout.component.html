@@ -29,6 +29,11 @@
         </span>
         <span class="text">Notification</span>
     </button> -->
+    <button (click)="toggleTheme()" class="logout-btn p-2 my-0" title="Change theme"
+        style="border-bottom: 1px solid var(--primary-border-color);">
+        <span class="toggle-theme-btn"><i class="fas {{ isThemeChecked ? 'fa-moon' : 'fa-sun' }}"></i></span>
+        <span class="text">{{ themeService.activeTheme === 'light' ? 'Light' : 'Dark' }} Mode</span>
+    </button>
     <button class="logout-btn" (click)="logout()">
         <span class="icon">
             <svg width="18" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">

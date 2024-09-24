@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing stockadjustmentitem-related operations in the API.
+    /// Controller responsible for managing stockadjustmentitem related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting stockadjustmentitem information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting stockadjustmentitem information.
     /// </remarks>
     [Route("api/stockadjustmentitem")]
     [Authorize]
-    public class StockAdjustmentItemController : ControllerBase
+    public class StockAdjustmentItemController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly IStockAdjustmentItemService _stockAdjustmentItemService;
 
-        public StockAdjustmentItemController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the StockAdjustmentItemController class with the specified context.
+        /// </summary>
+        /// <param name="istockadjustmentitemservice">The istockadjustmentitemservice to be used by the controller.</param>
+        public StockAdjustmentItemController(IStockAdjustmentItemService istockadjustmentitemservice)
         {
-            _context = context;
+            _stockAdjustmentItemService = istockadjustmentitemservice;
         }
 
-        /// <summary>Adds a new stockadjustmentitem to the database</summary>
+        /// <summary>Adds a new stockadjustmentitem</summary>
         /// <param name="model">The stockadjustmentitem data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("StockAdjustmentItem",Entitlements.Create)]
-        public IActionResult Post([FromBody] StockAdjustmentItem model)
+        [UserAuthorize("StockAdjustmentItem", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] StockAdjustmentItem model)
         {
-            _context.StockAdjustmentItem.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            var id = await _stockAdjustmentItemService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of stockadjustmentitems based on specified filters</summary>
@@ -52,13 +57,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of stockadjustmentitems</returns>
         [HttpGet]
-        [UserAuthorize("StockAdjustmentItem",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("StockAdjustmentItem", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +81,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.StockAdjustmentItem.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<StockAdjustmentItem>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(StockAdjustmentItem), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<StockAdjustmentItem, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _stockAdjustmentItemService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific stockadjustmentitem by its primary key</summary>
         /// <param name="id">The primary key of the stockadjustmentitem</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The stockadjustmentitem data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("StockAdjustmentItem",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("StockAdjustmentItem", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.StockAdjustmentItem.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _stockAdjustmentItemService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific stockadjustmentitem by its primary key</summary>
         /// <param name="id">The primary key of the stockadjustmentitem</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("StockAdjustmentItem",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("StockAdjustmentItem", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.StockAdjustmentItem.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.StockAdjustmentItem.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _stockAdjustmentItemService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +124,22 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The stockadjustmentitem data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("StockAdjustmentItem",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] StockAdjustmentItem updatedEntity)
+        [UserAuthorize("StockAdjustmentItem", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] StockAdjustmentItem updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.StockAdjustmentItem.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            var status = await _stockAdjustmentItemService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +148,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The stockadjustmentitem data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("StockAdjustmentItem",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +155,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<StockAdjustmentItem> updatedEntity)
+        [UserAuthorize("StockAdjustmentItem", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<StockAdjustmentItem> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.StockAdjustmentItem.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.StockAdjustmentItem.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _stockAdjustmentItemService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }

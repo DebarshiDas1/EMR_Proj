@@ -1,5 +1,3 @@
-using System;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
@@ -7,17 +5,29 @@ using Newtonsoft.Json;
 
 namespace EMRProj.Authorization
 {
+    /// <summary>
+    /// User authentication attribute
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class UserAuthorizeAttribute : Attribute, IAuthorizationFilter
     {
         private readonly string _entity;
         private readonly Entitlements _action;
+        /// <summary>
+        /// User authentication attribute constructor
+        /// </summary>
+        /// <param name = "entity">entity id</param>
+        /// <param name = "action">action type as Read,Create,Update and Delete</param>
         public UserAuthorizeAttribute(string entity, Entitlements action)
         {
             _entity = entity;
             _action = action;
         }
 
+        /// <summary>
+        /// OnAuthorization event
+        /// </summary>
+        /// <param name = "context">type of AuthorizationFilterContext</param> 
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             Guid.TryParse(context.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value, out Guid userId);

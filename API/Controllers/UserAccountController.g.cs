@@ -39,7 +39,7 @@ namespace EMRProj.Controllers
                 if (!model.Password.Equals(model.ConfirmPassword))
                     return BadRequest("Password and confirm-password does not match");
                 // Check if the email is unique (you might want to add more validation)
-                if (_userAuthenticationService.UserExist(model.TenantId, model.UserName, model.Email) == false)
+                if (_userAuthenticationService.UserExist((Guid)model.TenantId, model.UserName, model.Email) == false)
                 {
                     // Hash the password and save the user to the database
                     var (passwordHash, salt) = HashPassword(model.Password);
@@ -87,7 +87,7 @@ namespace EMRProj.Controllers
                     var data = new List<ClaimRoleModel>();
                     if (!user.IsSuperAdmin)
                     {
-                        data = _userAuthenticationService.GetUserACL(user.TenantId, user.Id);
+                        data = _userAuthenticationService.GetUserACL((Guid)user.TenantId, user.Id);
                     }
                     // Password is valid, perform login logic (you might want to use a cookie or JWT)
                     Claim[] claims = new Claim[]
@@ -104,7 +104,7 @@ namespace EMRProj.Controllers
                     var key = generateSecretKey();
                     Claim[] newClaims = claims.Append(new Claim("secretKey", key)).ToArray();
                     var reftoken = GenerateJSONWebToken(newClaims, AppSetting.TokenExpirationtime  * 2);
-                    _userAuthenticationService.CreateRefreshTokenByUser(user.TenantId, user.Id, key);
+                    _userAuthenticationService.CreateRefreshTokenByUser((Guid)user.TenantId, user.Id, key);
                     return Ok(new{
                         token,
                         refreshtoken = reftoken,
@@ -157,7 +157,7 @@ namespace EMRProj.Controllers
                 var key = generateSecretKey();
                 Claim[] newClaims = claims.Append(new Claim("secretKey", key)).ToArray();
                 var reftoken = GenerateJSONWebToken(newClaims, AppSetting.TokenExpirationtime  * 2);
-                _userAuthenticationService.UpdateRefreshTokenByUser(user.TenantId, tokenId, user.Id, key);
+                _userAuthenticationService.UpdateRefreshTokenByUser((Guid)user.TenantId, tokenId, user.Id, key);
                 if (claims != null)
                 {
                     return Ok(new{
@@ -213,6 +213,12 @@ namespace EMRProj.Controllers
 
         private readonly static string jwtKey = !string.IsNullOrEmpty(AppSetting.JwtKey) ? AppSetting.JwtKey : string.Empty;
 
+        /// <summary>
+        /// Generates a JSON Web Token (JWT) using the provided claims and expiry time.
+        /// </summary>
+        /// <param name="claims">An array of claims to be included in the JWT.</param>
+        /// <param name="expiryTime">The expiration time of the JWT in minutes.</param>
+        /// <returns>The generated JWT as a string.</returns>
         protected static string GenerateJSONWebToken(Claim[] claims, int expiryTime)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));

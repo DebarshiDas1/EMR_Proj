@@ -35,7 +35,7 @@ describe('DynamicLayoutComponent', () => {
     const mockData = [{ id: '1', name: 'Option 1' }, { id: '2', name: 'Option 2' }];
     entityDataServiceMock.getRecords.and.returnValue(of(mockData));
 
-    component.formFields = [{ fieldName: 'field1', dataType: 'guid', dataSource: 'entity1' }];
+    component.formFields = [{ fieldName: 'field1', dataType: 'guid', entityName: 'entity1' }];
     component.form = new FormGroup({ field1: new FormControl('1') });
 
     fixture.detectChanges();

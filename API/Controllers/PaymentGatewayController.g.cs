@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing paymentgateway-related operations in the API.
+    /// Controller responsible for managing paymentgateway related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting paymentgateway information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting paymentgateway information.
     /// </remarks>
     [Route("api/paymentgateway")]
     [Authorize]
-    public class PaymentGatewayController : ControllerBase
+    public class PaymentGatewayController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly IPaymentGatewayService _paymentGatewayService;
 
-        public PaymentGatewayController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the PaymentGatewayController class with the specified context.
+        /// </summary>
+        /// <param name="ipaymentgatewayservice">The ipaymentgatewayservice to be used by the controller.</param>
+        public PaymentGatewayController(IPaymentGatewayService ipaymentgatewayservice)
         {
-            _context = context;
+            _paymentGatewayService = ipaymentgatewayservice;
         }
 
-        /// <summary>Adds a new paymentgateway to the database</summary>
+        /// <summary>Adds a new paymentgateway</summary>
         /// <param name="model">The paymentgateway data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,14 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("PaymentGateway",Entitlements.Create)]
-        public IActionResult Post([FromBody] PaymentGateway model)
+        [UserAuthorize("PaymentGateway", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] PaymentGateway model)
         {
-            _context.PaymentGateway.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            model.CreatedBy = UserId;
+            model.CreatedOn = DateTime.UtcNow;
+            var id = await _paymentGatewayService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of paymentgateways based on specified filters</summary>
@@ -52,13 +59,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of paymentgateways</returns>
         [HttpGet]
-        [UserAuthorize("PaymentGateway",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("PaymentGateway", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +83,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.PaymentGateway.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<PaymentGateway>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(PaymentGateway), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<PaymentGateway, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _paymentGatewayService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific paymentgateway by its primary key</summary>
         /// <param name="id">The primary key of the paymentgateway</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The paymentgateway data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("PaymentGateway",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("PaymentGateway", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.PaymentGateway.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _paymentGatewayService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific paymentgateway by its primary key</summary>
         /// <param name="id">The primary key of the paymentgateway</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("PaymentGateway",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("PaymentGateway", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.PaymentGateway.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.PaymentGateway.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _paymentGatewayService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +126,23 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The paymentgateway data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("PaymentGateway",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] PaymentGateway updatedEntity)
+        [UserAuthorize("PaymentGateway", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] PaymentGateway updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.PaymentGateway.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            updatedEntity.UpdatedOn = DateTime.UtcNow;
+            var status = await _paymentGatewayService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +151,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The paymentgateway data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("PaymentGateway",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +158,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<PaymentGateway> updatedEntity)
+        [UserAuthorize("PaymentGateway", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<PaymentGateway> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.PaymentGateway.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.PaymentGateway.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _paymentGatewayService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }

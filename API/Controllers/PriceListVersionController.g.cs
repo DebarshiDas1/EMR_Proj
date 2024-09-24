@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing pricelistversion-related operations in the API.
+    /// Controller responsible for managing pricelistversion related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting pricelistversion information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting pricelistversion information.
     /// </remarks>
     [Route("api/pricelistversion")]
     [Authorize]
-    public class PriceListVersionController : ControllerBase
+    public class PriceListVersionController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly IPriceListVersionService _priceListVersionService;
 
-        public PriceListVersionController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the PriceListVersionController class with the specified context.
+        /// </summary>
+        /// <param name="ipricelistversionservice">The ipricelistversionservice to be used by the controller.</param>
+        public PriceListVersionController(IPriceListVersionService ipricelistversionservice)
         {
-            _context = context;
+            _priceListVersionService = ipricelistversionservice;
         }
 
-        /// <summary>Adds a new pricelistversion to the database</summary>
+        /// <summary>Adds a new pricelistversion</summary>
         /// <param name="model">The pricelistversion data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,14 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("PriceListVersion",Entitlements.Create)]
-        public IActionResult Post([FromBody] PriceListVersion model)
+        [UserAuthorize("PriceListVersion", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] PriceListVersion model)
         {
-            _context.PriceListVersion.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            model.CreatedBy = UserId;
+            model.CreatedOn = DateTime.UtcNow;
+            var id = await _priceListVersionService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of pricelistversions based on specified filters</summary>
@@ -52,13 +59,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of pricelistversions</returns>
         [HttpGet]
-        [UserAuthorize("PriceListVersion",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("PriceListVersion", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +83,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.PriceListVersion.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<PriceListVersion>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(PriceListVersion), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<PriceListVersion, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _priceListVersionService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific pricelistversion by its primary key</summary>
         /// <param name="id">The primary key of the pricelistversion</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The pricelistversion data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("PriceListVersion",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("PriceListVersion", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.PriceListVersion.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _priceListVersionService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific pricelistversion by its primary key</summary>
         /// <param name="id">The primary key of the pricelistversion</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("PriceListVersion",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("PriceListVersion", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.PriceListVersion.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.PriceListVersion.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _priceListVersionService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +126,22 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The pricelistversion data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("PriceListVersion",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] PriceListVersion updatedEntity)
+        [UserAuthorize("PriceListVersion", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] PriceListVersion updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.PriceListVersion.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            var status = await _priceListVersionService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +150,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The pricelistversion data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("PriceListVersion",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +157,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<PriceListVersion> updatedEntity)
+        [UserAuthorize("PriceListVersion", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<PriceListVersion> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.PriceListVersion.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.PriceListVersion.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _priceListVersionService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }

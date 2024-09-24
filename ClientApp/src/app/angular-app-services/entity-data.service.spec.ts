@@ -96,13 +96,14 @@ describe('EntityDataService', () => {
         it('should get record by id', () => {
             const entityName = 'users';
             const id = '1';
+            const fields = ['name', 'age'];
             const mockResponse = { id: 1, name: 'John Doe' };
 
-            service.getRecordById(entityName, id).subscribe(response => {
+            service.getRecordById(entityName, id, fields).subscribe(response => {
                 expect(response).toEqual(mockResponse);
             });
 
-            const req = httpMock.expectOne(`${service['route']}/${entityName}/${id}`);
+            const req = httpMock.expectOne(`${service['route']}/${entityName}/${id}?fields=${fields.join(',')}`);
             expect(req.request.method).toBe('GET');
             req.flush(mockResponse);
         });
@@ -110,33 +111,34 @@ describe('EntityDataService', () => {
         it('should handle invalid entity name', () => {
             const entityName = 'invalidEntity';
             const id = '1';
+            const fields = ['name', 'age'];
             const mockErrorResponse = { error: 'Entity not found' };
 
-            service.getRecordById(entityName, id).subscribe({
+            service.getRecordById(entityName, id, fields).subscribe({
                 next: () => fail('Expected an error'),
                 error: (error) => {
                     expect(error.error).toEqual(mockErrorResponse);
                 }
             });
 
-            const req = httpMock.expectOne(`${service['route']}/${entityName}/${id}`);
+            const req = httpMock.expectOne(`${service['route']}/${entityName}/${id}?fields=${fields.join(',')}`);
             expect(req.request.method).toBe('GET');
             req.flush(mockErrorResponse, { status: 404, statusText: 'Not Found' });
         });
-
         it('should handle invalid id', () => {
             const entityName = 'users';
             const id = 'invalid';
+            const fields = ['name', 'age'];
             const mockErrorResponse = { error: 'Invalid id' };
 
-            service.getRecordById(entityName, id).subscribe({
+            service.getRecordById(entityName, id, fields).subscribe({
                 next: () => fail('Expected an error'),
                 error: (error) => {
                     expect(error.error).toEqual(mockErrorResponse);
                 }
             });
 
-            const req = httpMock.expectOne(`${service['route']}/${entityName}/${id}`);
+            const req = httpMock.expectOne(`${service['route']}/${entityName}/${id}?fields=${fields.join(',')}`);
             expect(req.request.method).toBe('GET');
             req.flush(mockErrorResponse, { status: 400, statusText: 'Bad Request' });
         });

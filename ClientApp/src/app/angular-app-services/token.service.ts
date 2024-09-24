@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { jwtDecode } from 'jwt-decode';
 import { DecodedJwtPayload, User } from '../auth/user';
+import { Router } from '@angular/router';
 
 @Injectable({
     providedIn: 'root'
@@ -9,6 +10,8 @@ export class TokenService {
     public tokenGettingRefreshed: boolean = false;
 
     private user!: User;
+
+    constructor(private router: Router, private ngZone: NgZone) { }
 
     public getRefreshToken(): string | null {
         const loginResponse = this.getToken();
@@ -40,6 +43,9 @@ export class TokenService {
 
     public logout(): void {
         localStorage.removeItem('token');
+        this.ngZone.run(() => {
+            this.router.navigate(['']).then(() => window.location.reload());
+        });
     }
 
     public isAuthTokenExpired(token?: string): boolean {

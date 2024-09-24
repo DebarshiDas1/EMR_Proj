@@ -3,6 +3,7 @@
     --ec-mat-mdc-form-field-focus-overlay-color: rgba(0, 0, 0, 0.3);
     --ec-form-field-label-color: var(--primary-text-color);
     --ec-form-error-color: var(--primary-error);
+    --mat-option-hover-state-layer-color: var(--main-hover-bg);
   }
 
   .mat-mdc-form-field-focus-overlay {
@@ -52,9 +53,9 @@
       }
 
       .mdc-text-field {
-        background: $white;
+        background: var(--popup-bg);
         padding: 6px 12px;
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--secondary-border-color);
         border-radius: 6px;
         box-sizing: border-box;
 
@@ -78,7 +79,7 @@
         font-weight: normal;
         font-size: 14px;
         line-height: 18px;
-        color: #78829d !important;
+        color: var(--primary-label-color) !important;
         top: 15px !important;
 
         .mat-mdc-form-field-required-marker {
@@ -103,6 +104,7 @@
             color: var(--color-4);
             text-overflow: ellipsis;
             box-shadow: none;
+            caret-color: auto;
           }
 
           .mat-date-range-input {
@@ -671,11 +673,12 @@
 }
 
 .mat-mdc-option .mat-select-search-inner {
+  background-color: var(--popup-bg) !important;
 
   .mat-select-search-inner-row {
     display: flex;
     margin: 8px 10px;
-    border: 1px solid var(--border-color-dark);
+    border: 1px solid var(--primary-border-color);
     border-radius: 6px;
 
     input {
@@ -683,6 +686,7 @@
       padding-top: 0px;
       padding-right: 0px;
       max-height: 30px;
+      background-color: transparent;
     }
   }
 
@@ -698,7 +702,7 @@
   .mat-select-search-clear {
     padding-top: 0px;
     margin-right: 7px;
-    background-color: $white;
+    background-color: transparent;
 
     .mat-icon {
       font-size: 16px;
@@ -716,9 +720,17 @@
 }
 
 .required-field .mat-mdc-text-field-wrapper {
-  border-top-color: var(--border-color) !important;
-  border-right-color: var(--border-color) !important;
-  border-bottom-color: var(--border-color) !important;
+  border-top-color: var(--primary-border-color) !important;
+  border-right-color: var(--primary-border-color) !important;
+  border-bottom-color: var(--primary-border-color) !important;
   border-left: 2px solid $primary-error !important;
   transition: border-left-color 0.3s ease;
+}
+
+:root {
+  --mat-select-panel-background-color: var(--bg-secondary);
+}
+
+.mat-pseudo-checkbox-minimal.mat-pseudo-checkbox-checked::after {
+  color: var(--primary-color) !important;
 }

@@ -1,37 +1,12 @@
-import { ComponentFixture, TestBed, fakeAsync } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, waitForAsync } from '@angular/core/testing';
 import { LoginComponent } from './login.component';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { NO_ERRORS_SCHEMA, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { AuthService } from '../angular-app-services/auth.service';
-import { RouterTestingModule } from '@angular/router/testing';
 import { TokenService } from '../angular-app-services/token.service';
 import { SweetAlertService } from '../angular-app-services/sweet-alert.service';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
-describe('LoginComponent', () => {
-  let component: LoginComponent;
-  let fixture: ComponentFixture<LoginComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, RouterTestingModule],
-      declarations: [LoginComponent],
-      schemas: [
-        NO_ERRORS_SCHEMA,
-        CUSTOM_ELEMENTS_SCHEMA
-      ],
-      providers: [AuthService]
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(LoginComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-});
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -41,22 +16,28 @@ describe('LoginComponent', () => {
   let sweetAlertService: SweetAlertService;
   let router: Router;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, RouterTestingModule],
-      declarations: [LoginComponent],
-      schemas: [NO_ERRORS_SCHEMA, CUSTOM_ELEMENTS_SCHEMA],
-      providers: [AuthService, TokenService, SweetAlertService]
-    }).compileComponents();
+  beforeEach(
+    waitForAsync(() => {
+      TestBed.configureTestingModule({
+        imports: [HttpClientTestingModule],
+        declarations: [LoginComponent],
+        schemas: [NO_ERRORS_SCHEMA, CUSTOM_ELEMENTS_SCHEMA],
+        providers: [AuthService, TokenService, SweetAlertService, provideRouter([])]
+      }).compileComponents();
 
-    fixture = TestBed.createComponent(LoginComponent);
-    component = fixture.componentInstance;
-    authService = TestBed.inject(AuthService);
-    tokenService = TestBed.inject(TokenService);
-    sweetAlertService = TestBed.inject(SweetAlertService);
-    router = TestBed.inject(Router);
-    fixture.detectChanges();
+      fixture = TestBed.createComponent(LoginComponent);
+      component = fixture.componentInstance;
+      authService = TestBed.inject(AuthService);
+      tokenService = TestBed.inject(TokenService);
+      sweetAlertService = TestBed.inject(SweetAlertService);
+      router = TestBed.inject(Router);
+      fixture.detectChanges();
+    }));
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
   });
+
 
   it('should navigate to dashboard if token is not expired', () => {
     const navigateSpy = spyOn(router, 'navigate');

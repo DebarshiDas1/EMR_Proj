@@ -93,8 +93,8 @@ export class TemplateAddComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getLayout(entityName: string, layoutType: string): void {
-    this.layoutService.getLayout(entityName, layoutType)
+  private getLayout(entityName: string, fileName: string): void {
+    this.layoutService.getLayout(entityName, fileName)
       ?.pipe(takeUntil(this.destroy))
       .subscribe({
         next: data => {
@@ -115,7 +115,8 @@ export class TemplateAddComponent implements OnInit, OnDestroy {
   }
 
   private getRecord(id: string): void {
-    this.entityDataService.getRecordById(this.entityName, id)
+    const fields = this.entityDataService.getFields(this.layoutData);
+    this.entityDataService.getRecordById(this.entityName, id, fields)
       ?.pipe(takeUntil(this.destroy))
       .subscribe({
         next: data => {
@@ -129,7 +130,7 @@ export class TemplateAddComponent implements OnInit, OnDestroy {
   private initializeForm(fields: any[], data?: any) {
     // Loop through the fields and add form controls
     fields.forEach(field => {
-      if (field.type === 'section') {
+      if (field.dataType === 'section') {
         this.initializeForm(field.fields, data);
       } else {
         field.fieldName = _camelCase(field.fieldName);

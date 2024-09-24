@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing doctorfavouritemedication-related operations in the API.
+    /// Controller responsible for managing doctorfavouritemedication related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting doctorfavouritemedication information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting doctorfavouritemedication information.
     /// </remarks>
     [Route("api/doctorfavouritemedication")]
     [Authorize]
-    public class DoctorFavouriteMedicationController : ControllerBase
+    public class DoctorFavouriteMedicationController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly IDoctorFavouriteMedicationService _doctorFavouriteMedicationService;
 
-        public DoctorFavouriteMedicationController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the DoctorFavouriteMedicationController class with the specified context.
+        /// </summary>
+        /// <param name="idoctorfavouritemedicationservice">The idoctorfavouritemedicationservice to be used by the controller.</param>
+        public DoctorFavouriteMedicationController(IDoctorFavouriteMedicationService idoctorfavouritemedicationservice)
         {
-            _context = context;
+            _doctorFavouriteMedicationService = idoctorfavouritemedicationservice;
         }
 
-        /// <summary>Adds a new doctorfavouritemedication to the database</summary>
+        /// <summary>Adds a new doctorfavouritemedication</summary>
         /// <param name="model">The doctorfavouritemedication data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("DoctorFavouriteMedication",Entitlements.Create)]
-        public IActionResult Post([FromBody] DoctorFavouriteMedication model)
+        [UserAuthorize("DoctorFavouriteMedication", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] DoctorFavouriteMedication model)
         {
-            _context.DoctorFavouriteMedication.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            var id = await _doctorFavouriteMedicationService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of doctorfavouritemedications based on specified filters</summary>
@@ -52,13 +57,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of doctorfavouritemedications</returns>
         [HttpGet]
-        [UserAuthorize("DoctorFavouriteMedication",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("DoctorFavouriteMedication", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +81,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.DoctorFavouriteMedication.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<DoctorFavouriteMedication>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(DoctorFavouriteMedication), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<DoctorFavouriteMedication, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _doctorFavouriteMedicationService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific doctorfavouritemedication by its primary key</summary>
         /// <param name="id">The primary key of the doctorfavouritemedication</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The doctorfavouritemedication data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("DoctorFavouriteMedication",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("DoctorFavouriteMedication", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.DoctorFavouriteMedication.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _doctorFavouriteMedicationService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific doctorfavouritemedication by its primary key</summary>
         /// <param name="id">The primary key of the doctorfavouritemedication</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("DoctorFavouriteMedication",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("DoctorFavouriteMedication", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.DoctorFavouriteMedication.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.DoctorFavouriteMedication.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _doctorFavouriteMedicationService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +124,22 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The doctorfavouritemedication data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("DoctorFavouriteMedication",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] DoctorFavouriteMedication updatedEntity)
+        [UserAuthorize("DoctorFavouriteMedication", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] DoctorFavouriteMedication updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.DoctorFavouriteMedication.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            var status = await _doctorFavouriteMedicationService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +148,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The doctorfavouritemedication data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("DoctorFavouriteMedication",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +155,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<DoctorFavouriteMedication> updatedEntity)
+        [UserAuthorize("DoctorFavouriteMedication", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<DoctorFavouriteMedication> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.DoctorFavouriteMedication.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.DoctorFavouriteMedication.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _doctorFavouriteMedicationService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }

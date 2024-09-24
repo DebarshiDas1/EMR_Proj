@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing pregnancyhistory-related operations in the API.
+    /// Controller responsible for managing pregnancyhistory related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting pregnancyhistory information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting pregnancyhistory information.
     /// </remarks>
     [Route("api/pregnancyhistory")]
     [Authorize]
-    public class PregnancyHistoryController : ControllerBase
+    public class PregnancyHistoryController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly IPregnancyHistoryService _pregnancyHistoryService;
 
-        public PregnancyHistoryController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the PregnancyHistoryController class with the specified context.
+        /// </summary>
+        /// <param name="ipregnancyhistoryservice">The ipregnancyhistoryservice to be used by the controller.</param>
+        public PregnancyHistoryController(IPregnancyHistoryService ipregnancyhistoryservice)
         {
-            _context = context;
+            _pregnancyHistoryService = ipregnancyhistoryservice;
         }
 
-        /// <summary>Adds a new pregnancyhistory to the database</summary>
+        /// <summary>Adds a new pregnancyhistory</summary>
         /// <param name="model">The pregnancyhistory data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,14 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("PregnancyHistory",Entitlements.Create)]
-        public IActionResult Post([FromBody] PregnancyHistory model)
+        [UserAuthorize("PregnancyHistory", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] PregnancyHistory model)
         {
-            _context.PregnancyHistory.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            model.CreatedBy = UserId;
+            model.CreatedOn = DateTime.UtcNow;
+            var id = await _pregnancyHistoryService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of pregnancyhistorys based on specified filters</summary>
@@ -52,13 +59,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of pregnancyhistorys</returns>
         [HttpGet]
-        [UserAuthorize("PregnancyHistory",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("PregnancyHistory", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +83,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.PregnancyHistory.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<PregnancyHistory>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(PregnancyHistory), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<PregnancyHistory, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _pregnancyHistoryService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific pregnancyhistory by its primary key</summary>
         /// <param name="id">The primary key of the pregnancyhistory</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The pregnancyhistory data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("PregnancyHistory",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("PregnancyHistory", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.PregnancyHistory.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _pregnancyHistoryService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific pregnancyhistory by its primary key</summary>
         /// <param name="id">The primary key of the pregnancyhistory</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("PregnancyHistory",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("PregnancyHistory", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.PregnancyHistory.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.PregnancyHistory.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _pregnancyHistoryService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +126,22 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The pregnancyhistory data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("PregnancyHistory",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] PregnancyHistory updatedEntity)
+        [UserAuthorize("PregnancyHistory", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] PregnancyHistory updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.PregnancyHistory.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            var status = await _pregnancyHistoryService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +150,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The pregnancyhistory data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("PregnancyHistory",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +157,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<PregnancyHistory> updatedEntity)
+        [UserAuthorize("PregnancyHistory", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<PregnancyHistory> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.PregnancyHistory.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.PregnancyHistory.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _pregnancyHistoryService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }

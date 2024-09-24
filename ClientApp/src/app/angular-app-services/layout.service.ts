@@ -9,8 +9,8 @@ import { AppConfigService } from '../app-config.service';
 export class LayoutService {
     constructor(private http: HttpClient) { }
 
-    public getLayout(entityName: string, layoutType: string): Observable<any> {
-        return this.http.get<any>(`${this.route}/${entityName}/layout?layoutType=${layoutType}`);
+    public getLayout(entityName: string, fileName: string): Observable<any> {
+        return this.http.get<any>(`${this.route}/${entityName}/layout?fileName=${fileName}`);
     }
 
     private get route(): string {

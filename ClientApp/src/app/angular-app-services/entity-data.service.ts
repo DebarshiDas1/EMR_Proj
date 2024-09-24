@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AppConfigService } from '../app-config.service';
+import { _camelCase } from '../library/utils';
 
 @Injectable({
     providedIn: 'root'
@@ -45,12 +46,27 @@ export class EntityDataService {
         return this.http.get<any[]>(`${this.route}/${entityName}`, { params });
     }
 
-    public getRecordById(entityName: string, id: string): Observable<any> {
-        return this.http.get<any>(`${this.route}/${entityName}/${id}`);
+    public getRecordById(entityName: string, id: string, fields: string[] = []): Observable<any> {
+        return this.http.get<any>(`${this.route}/${entityName}/${id}`, { params: { fields: fields.join(',') } });
     }
 
     private get route(): string {
         const baseUrl = AppConfigService.appConfig ? AppConfigService.appConfig.api.url : '';
         return `${baseUrl}/api`;
+    }
+
+    getFields(layout: any[], fields: string[] = []): string[] {
+        layout?.forEach(field => {
+            if (['section', 'tab', 'groupfield'].indexOf(field.dataType.toLowerCase()) > -1) {
+                fields = this.getFields(field.fields, fields);
+            } else if (field.fieldName && !fields.includes(field.fieldName)) {
+                fields.push(`${_camelCase(field.fieldName)}`);
+                if (field.dataType?.toLowerCase() === 'guid' && field.entityName) {
+                    fields.push(`${field.fieldName}_${field.entityName}.${field.valueField ?? 'id'}`);
+                    fields.push(`${field.fieldName}_${field.entityName}.${field.textField ?? 'name'}`);
+                }
+            }
+        });
+        return fields;
     }
 }

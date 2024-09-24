@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { ReactiveFormsModule } from '@angular/forms';
 import { TemplateAddComponent } from './template-add.component';
@@ -14,27 +14,28 @@ describe('TemplateAddComponent', () => {
     let layoutServiceMock: jasmine.SpyObj<LayoutService>;
     let sweetAlertServiceMock: jasmine.SpyObj<SweetAlertService>;
 
-    beforeEach(async () => {
-        entityDataServiceMock = jasmine.createSpyObj('EntityDataService', ['addRecord', 'editRecordById', 'getRecordById']);
-        layoutServiceMock = jasmine.createSpyObj('LayoutService', ['getLayout']);
-        sweetAlertServiceMock = jasmine.createSpyObj('SweetAlertService', ['showSuccess']);
+    beforeEach(
+        waitForAsync(() => {
+            entityDataServiceMock = jasmine.createSpyObj('EntityDataService', ['addRecord', 'editRecordById', 'getRecordById', 'getFields']);
+            layoutServiceMock = jasmine.createSpyObj('LayoutService', ['getLayout']);
+            sweetAlertServiceMock = jasmine.createSpyObj('SweetAlertService', ['showSuccess']);
 
-        await TestBed.configureTestingModule({
-            declarations: [TemplateAddComponent],
-            imports: [ReactiveFormsModule, MatDialogModule],
-            providers: [
-                { provide: MatDialogRef, useValue: {} },
-                { provide: MAT_DIALOG_DATA, useValue: {} },
-                { provide: EntityDataService, useValue: entityDataServiceMock },
-                { provide: LayoutService, useValue: layoutServiceMock },
-                { provide: SweetAlertService, useValue: sweetAlertServiceMock }
-            ]
-        }).compileComponents();
+            TestBed.configureTestingModule({
+                declarations: [TemplateAddComponent],
+                imports: [ReactiveFormsModule, MatDialogModule],
+                providers: [
+                    { provide: MatDialogRef, useValue: {} },
+                    { provide: MAT_DIALOG_DATA, useValue: {} },
+                    { provide: EntityDataService, useValue: entityDataServiceMock },
+                    { provide: LayoutService, useValue: layoutServiceMock },
+                    { provide: SweetAlertService, useValue: sweetAlertServiceMock }
+                ]
+            }).compileComponents();
 
-        fixture = TestBed.createComponent(TemplateAddComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
+            fixture = TestBed.createComponent(TemplateAddComponent);
+            component = fixture.componentInstance;
+            fixture.detectChanges();
+        }));
 
     it('should create', () => {
         expect(component).toBeTruthy();
@@ -43,7 +44,7 @@ describe('TemplateAddComponent', () => {
     it('should initialize form with default values', () => {
         const layoutData = [
             {
-                type: 'section', fields: [
+                dataType: 'section', fields: [
                     { fieldName: 'name', dataType: 'string', required: true },
                     { fieldName: 'age', dataType: 'numeric', required: false }
                 ]
@@ -58,7 +59,7 @@ describe('TemplateAddComponent', () => {
     it('should patch form with existing data', () => {
         const layoutData = [
             {
-                type: 'section', fields: [
+                dataType: 'section', fields: [
                     { fieldName: 'name', dataType: 'string', required: true },
                     { fieldName: 'age', dataType: 'numeric', required: false }
                 ]
@@ -76,7 +77,7 @@ describe('TemplateAddComponent', () => {
     it('should add record', () => {
         const layoutData = [
             {
-                type: 'section', fields: [
+                dataType: 'section', fields: [
                     { fieldName: 'name', dataType: 'string', required: true },
                     { fieldName: 'age', dataType: 'numeric', required: false }
                 ]
@@ -97,7 +98,7 @@ describe('TemplateAddComponent', () => {
     it('should edit record', () => {
         const layoutData = [
             {
-                type: 'section', fields: [
+                dataType: 'section', fields: [
                     { fieldName: 'name', dataType: 'string', required: true },
                     { fieldName: 'age', dataType: 'numeric', required: false }
                 ]

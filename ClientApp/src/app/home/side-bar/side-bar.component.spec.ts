@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { SideBarComponent } from './side-bar.component';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { NO_ERRORS_SCHEMA, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
@@ -6,6 +6,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { LogoutComponent } from 'src/app/logout/logout.component';
 import { MenuService } from 'src/app/angular-app-services/menu.service';
 import { of } from 'rxjs';
+import { ThemeService } from 'src/app/angular-app-services/theme.service';
 
 describe('SideBarComponent', () => {
   let component: SideBarComponent;
@@ -13,24 +14,34 @@ describe('SideBarComponent', () => {
   let dialog: MatDialog;
   let menuServiceSpy: jasmine.SpyObj<MenuService>;
 
-  beforeEach(async () => {
-    const spy = jasmine.createSpyObj('MenuService', ['getMenu']);
-    await TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, MatDialogModule],
-      declarations: [SideBarComponent],
-      schemas: [NO_ERRORS_SCHEMA, CUSTOM_ELEMENTS_SCHEMA],
-      providers: [{ provide: MenuService, useValue: spy }]
-    }).compileComponents();
+  beforeEach(
+    waitForAsync(() => {
+      const spy = jasmine.createSpyObj('MenuService', ['getMenu']);
+      TestBed.configureTestingModule({
+        imports: [HttpClientTestingModule, MatDialogModule],
+        declarations: [SideBarComponent],
+        schemas: [NO_ERRORS_SCHEMA, CUSTOM_ELEMENTS_SCHEMA],
+        providers: [
+          {
+            provide: MenuService,
+            useValue: spy
+          },
+          {
+            provide: ThemeService,
+            useValue: jasmine.createSpyObj('ThemeService', ['setTheme'])
+          }
+        ]
+      }).compileComponents();
 
-    fixture = TestBed.createComponent(SideBarComponent);
-    component = fixture.componentInstance;
-    dialog = TestBed.inject(MatDialog);
-    fixture.detectChanges();
-    fixture = TestBed.createComponent(SideBarComponent);
-    component = fixture.componentInstance;
-    menuServiceSpy = TestBed.inject(MenuService) as jasmine.SpyObj<MenuService>;
-    fixture.detectChanges();
-  });
+      fixture = TestBed.createComponent(SideBarComponent);
+      component = fixture.componentInstance;
+      dialog = TestBed.inject(MatDialog);
+      fixture.detectChanges();
+      fixture = TestBed.createComponent(SideBarComponent);
+      component = fixture.componentInstance;
+      menuServiceSpy = TestBed.inject(MenuService) as jasmine.SpyObj<MenuService>;
+      fixture.detectChanges();
+    }));
 
   it('should create', () => {
     expect(component).toBeTruthy();

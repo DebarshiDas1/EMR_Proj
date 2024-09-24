@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace EMRProj.Entities
 {
+#pragma warning disable
     /// <summary> 
     /// Represents a goodsreceipt entity with essential details
     /// </summary>
@@ -14,7 +15,7 @@ namespace EMRProj.Entities
         /// Required field TenantId of the GoodsReceipt 
         /// </summary>
         [Required]
-        public Guid TenantId { get; set; }
+        public Guid? TenantId { get; set; }
 
         /// <summary>
         /// Primary key for the GoodsReceipt 

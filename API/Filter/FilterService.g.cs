@@ -6,9 +6,20 @@ using System.Linq.Expressions;
 
 namespace EMRProj.Filter
 {
+    /// <summary>
+    /// Applies a dynamic filter to the provided query based on the given filter criteria and search term.
+    /// </summary>
+    /// <typeparam name = "TEntity">The type of entity to filter.</typeparam>
     public static class FilterService<TEntity>
     {
-        public static IQueryable<TEntity> ApplyFilter<TEntity>(IQueryable<TEntity> query, List<FilterCriteria> filters, string searchTerm)
+        /// <summary>
+        /// Applies a dynamic filter to the provided query based on the given filter criteria and search term.
+        /// </summary>
+        /// <param name = "query">The query to which the filter will be applied.</param>
+        /// <param name = "filters">A list of filter criteria to apply.</param>
+        /// <param name = "searchTerm">The search term to be used for filtering.</param>
+        /// <returns>The filtered query.</returns>
+        public static IQueryable<TEntity> ApplyFilter(IQueryable<TEntity> query, List<FilterCriteria> filters, string searchTerm)
         {
             if (!string.IsNullOrEmpty(searchTerm))
             {
@@ -136,7 +147,7 @@ namespace EMRProj.Filter
             return Expression.Constant(false);
         }
 
-        private static IQueryable<TEntity> ApplyContainsSearch<TEntity>(IQueryable<TEntity> query, string searchTerm)
+        private static IQueryable<TEntity> ApplyContainsSearch(IQueryable<TEntity> query, string searchTerm)
         {
             IEnumerable<string> stringProperties =  GetStringProperties();
             ParameterExpression parameter =  Expression.Parameter(typeof(TEntity), "x");

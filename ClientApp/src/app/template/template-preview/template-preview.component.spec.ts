@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TemplatePreviewComponent } from './template-preview.component';
 import { TemplateAddComponent } from '../template-add/template-add.component';
@@ -11,21 +11,22 @@ describe('TemplatePreviewComponent', () => {
     let entityDataServiceMock: jasmine.SpyObj<EntityDataService>;
     let layoutServiceMock: jasmine.SpyObj<LayoutService>;
 
-    beforeEach(async () => {
-        await TestBed.configureTestingModule({
-            declarations: [TemplatePreviewComponent, TemplateAddComponent],
-            imports: [MatDialogModule],
-            providers: [
-                { provide: EntityDataService, useValue: entityDataServiceMock },
-                { provide: LayoutService, useValue: layoutServiceMock },
-                { provide: MAT_DIALOG_DATA, useValue: {} },
-            ]
-        }).compileComponents();
+    beforeEach(
+        waitForAsync(() => {
+            TestBed.configureTestingModule({
+                declarations: [TemplatePreviewComponent, TemplateAddComponent],
+                imports: [MatDialogModule],
+                providers: [
+                    { provide: EntityDataService, useValue: entityDataServiceMock },
+                    { provide: LayoutService, useValue: layoutServiceMock },
+                    { provide: MAT_DIALOG_DATA, useValue: {} },
+                ]
+            }).compileComponents();
 
-        fixture = TestBed.createComponent(TemplatePreviewComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
+            fixture = TestBed.createComponent(TemplatePreviewComponent);
+            component = fixture.componentInstance;
+            fixture.detectChanges();
+        }));
 
     it('should create', () => {
         expect(component).toBeTruthy();

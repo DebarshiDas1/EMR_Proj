@@ -31,7 +31,7 @@ describe('LayoutService', () => {
 
         const req = httpMock.expectOne(req => {
             return req.method === 'GET' &&
-                req.url === `${service['route']}/${entityName}/layout?layoutType=${layoutType}`;
+                req.url === `${service['route']}/${entityName}/layout?fileName=${layoutType}`;
         });
 
         expect(req.request.method).toBe('GET');
@@ -52,7 +52,7 @@ describe('LayoutService', () => {
 
         const req = httpMock.expectOne(req => {
             return req.method === 'GET' &&
-                req.url === `${service['route']}/${entityName}/layout?layoutType=${layoutType}`;
+                req.url === `${service['route']}/${entityName}/layout?fileName=${layoutType}`;
         });
 
         expect(req.request.method).toBe('GET');
@@ -73,7 +73,7 @@ describe('LayoutService', () => {
 
         const req = httpMock.expectOne(req => {
             return req.method === 'GET' &&
-                req.url === `${service['route']}/${entityName}/layout?layoutType=${layoutType}`;
+                req.url === `${service['route']}/${entityName}/layout?fileName=${layoutType}`;
         });
 
         expect(req.request.method).toBe('GET');
@@ -94,7 +94,7 @@ describe('LayoutService', () => {
 
         const req = httpMock.expectOne(req => {
             return req.method === 'GET' &&
-                req.url === `${service['route']}/${entityName}/layout?layoutType=${layoutType}`;
+                req.url === `${service['route']}/${entityName}/layout?fileName=${layoutType}`;
         });
 
         expect(req.request.method).toBe('GET');

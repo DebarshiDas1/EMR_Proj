@@ -2,10 +2,10 @@
 
 .cards {
     margin: 0px 0px 15px 0px;
-    border: 1px solid $border-color;
-    background-color: $white;
+    border: 1px solid var(--primary-border-color);
+    background-color: var(--default-card-bg);
     border-radius: 5px;
-    box-shadow: 0px 3px 4px 0px rgba(0, 0, 0, 0.03);
+    box-shadow: var(--box-shadow-3);
 
     .card-title {
         padding: 15px 20px 0px;
@@ -17,7 +17,8 @@
             position: relative;
             font-size: .975rem;
             font-weight: 500;
-            color: #252f4a;
+            // color: #252f4a;
+            color: var(--primary-header-color);
         }
     }
 
@@ -29,18 +30,16 @@
     .cards-content {
         padding: 15px 20px 0px 20px;
     }
+}
 
-    .preview-data {
-        padding: 0px;
-        // border: 1px solid var(--border-color);
-        // border-radius: 6px;
-        box-sizing: border-box;
-        min-height: 35px;
-        margin-bottom: 15px;
-    }
+.preview-data {
+    padding: 0px;
+    box-sizing: border-box;
+    min-height: 35px;
+    margin-bottom: 15px;
 
     .list-info-label {
-        color: #78829d;
+        color: var(--primary-label-color);
     }
 
     .list-info-text {

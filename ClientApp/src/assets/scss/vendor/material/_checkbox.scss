@@ -1,5 +1,8 @@
 :root {
   --ec-checkbox-unselected-icon-color: var(--border-color-secondary);
+  --mat-datepicker-calendar-date-focus-state-background-color: var(--item-hover-bg);
+  --mat-datepicker-calendar-date-hover-state-background-color: var(--item-hover-bg);
+  --mat-datepicker-calendar-date-selected-state-background-color: var(--primary-color);
 }
 
 /* There is a space at the bottom of every checkbox.
@@ -58,13 +61,14 @@
 
   .mdc-checkbox__background {
     transition: .3s;
+    border-color: var(--border-color-secondary) !important;
   }
 
   .mdc-form-field {
     label {
       font-weight: 400;
       font-size: 14px;
-      color: var(--color-3);
+      color: var(--color-4);
       padding-left: var(--ec-checkbox-gap);
     }
 
@@ -159,6 +163,10 @@
   }
 }
 
+.mat-mdc-checkbox-checked .mdc-checkbox__background {
+  background-color: var(--primary-color) !important;
+}
+
 // disabled state
 .mdc-checkbox--disabled {
   opacity: .3;
@@ -190,8 +198,16 @@
   }
 }
 
-.mat-check-box-field .mdc-label {
-  white-space: nowrap;
+.mat-check-box-field {
   overflow: hidden;
-  text-overflow: ellipsis;
+
+  .mdc-form-field {
+    width: 100%;
+
+    .mdc-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
 }

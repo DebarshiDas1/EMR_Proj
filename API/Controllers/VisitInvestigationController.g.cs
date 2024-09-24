@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing visitinvestigation-related operations in the API.
+    /// Controller responsible for managing visitinvestigation related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting visitinvestigation information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting visitinvestigation information.
     /// </remarks>
     [Route("api/visitinvestigation")]
     [Authorize]
-    public class VisitInvestigationController : ControllerBase
+    public class VisitInvestigationController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly IVisitInvestigationService _visitInvestigationService;
 
-        public VisitInvestigationController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the VisitInvestigationController class with the specified context.
+        /// </summary>
+        /// <param name="ivisitinvestigationservice">The ivisitinvestigationservice to be used by the controller.</param>
+        public VisitInvestigationController(IVisitInvestigationService ivisitinvestigationservice)
         {
-            _context = context;
+            _visitInvestigationService = ivisitinvestigationservice;
         }
 
-        /// <summary>Adds a new visitinvestigation to the database</summary>
+        /// <summary>Adds a new visitinvestigation</summary>
         /// <param name="model">The visitinvestigation data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("VisitInvestigation",Entitlements.Create)]
-        public IActionResult Post([FromBody] VisitInvestigation model)
+        [UserAuthorize("VisitInvestigation", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] VisitInvestigation model)
         {
-            _context.VisitInvestigation.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            var id = await _visitInvestigationService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of visitinvestigations based on specified filters</summary>
@@ -52,13 +57,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of visitinvestigations</returns>
         [HttpGet]
-        [UserAuthorize("VisitInvestigation",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("VisitInvestigation", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +81,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.VisitInvestigation.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<VisitInvestigation>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(VisitInvestigation), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<VisitInvestigation, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _visitInvestigationService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific visitinvestigation by its primary key</summary>
         /// <param name="id">The primary key of the visitinvestigation</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The visitinvestigation data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("VisitInvestigation",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("VisitInvestigation", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.VisitInvestigation.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _visitInvestigationService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific visitinvestigation by its primary key</summary>
         /// <param name="id">The primary key of the visitinvestigation</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("VisitInvestigation",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("VisitInvestigation", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.VisitInvestigation.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.VisitInvestigation.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _visitInvestigationService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +124,22 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The visitinvestigation data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("VisitInvestigation",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] VisitInvestigation updatedEntity)
+        [UserAuthorize("VisitInvestigation", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] VisitInvestigation updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.VisitInvestigation.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            var status = await _visitInvestigationService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +148,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The visitinvestigation data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("VisitInvestigation",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +155,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<VisitInvestigation> updatedEntity)
+        [UserAuthorize("VisitInvestigation", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<VisitInvestigation> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.VisitInvestigation.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.VisitInvestigation.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _visitInvestigationService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }

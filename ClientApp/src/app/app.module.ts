@@ -12,6 +12,7 @@ import { AppConfigService } from './app-config.service';
 import { PermissionsService } from './angular-app-services/permissions.service';
 import { HttpRequestInterceptor } from './angular-app-services/Interceptor/http.interceptor';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { ThemeService } from './angular-app-services/theme.service';
 
 @NgModule({
   declarations: [
@@ -38,6 +39,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     },
     AuthService,
     PermissionsService,
+    ThemeService,
     {
       provide: APP_INITIALIZER,
       useFactory: (appConfig: AppConfigService) => () => {

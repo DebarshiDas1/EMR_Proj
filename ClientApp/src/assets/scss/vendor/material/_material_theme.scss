@@ -33,24 +33,24 @@ $ec-palette: (
 );
 
 
-$ec-primary: mat.define-palette($ec-palette, 500);
-$ec-accent: mat.define-palette($ec-palette, 500, A100, A400);
+// $ec-primary: mat.define-palette($ec-palette, 500);
+// $ec-accent: mat.define-palette($ec-palette, 500, A100, A400);
 
-$ec-theme: mat.define-light-theme((color: (primary: $ec-primary,
-        accent: $ec-accent ),
-      typography: mat.define-typography-config(),
-      density: 0,
-    ));
+// $ec-theme: mat.define-light-theme((color: (primary: $ec-primary,
+//         accent: $ec-accent ),
+//       typography: mat.define-typography-config(),
+//       density: 0,
+//     ));
 
-// Emit theme-dependent styles for common features used across multiple components.
-@include mat.core-theme($ec-theme);
+// // Emit theme-dependent styles for common features used across multiple components.
+// @include mat.core-theme($ec-theme);
 
-// @include mat.all-component-themes($ec-theme); // for all components theme
-@include mat.typography-hierarchy($ec-theme);
+// // @include mat.all-component-themes($ec-theme); // for all components theme
+// @include mat.typography-hierarchy($ec-theme);
 
-// Include the theme mixins for other components you use here.
-// @include mat.button-theme($ec-theme);
-@include mat.checkbox-theme($ec-theme);
-@include mat.radio-theme($ec-theme);
-@include mat.select-theme($ec-theme);
-@include mat.slide-toggle-theme($ec-theme);
+// // Include the theme mixins for other components you use here.
+// // @include mat.button-theme($ec-theme);
+// @include mat.checkbox-theme($ec-theme);
+// @include mat.radio-theme($ec-theme);
+// @include mat.select-theme($ec-theme);
+// @include mat.slide-toggle-theme($ec-theme);

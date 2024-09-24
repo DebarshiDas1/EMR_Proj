@@ -1,15 +1,15 @@
 <div class="row">
     <ng-container *ngFor="let section of mappedData">
-        <ng-container [ngSwitch]="section.type">
+        <ng-container [ngSwitch]="section.dataType">
 
             <!-- Section -->
             <div *ngSwitchCase="'section'" [ngClass]="getColumnClass(section.column)">
                 <div class="cards">
                     <div class="align-items-center card-title">
-                        <p class="section-header tuncate-text" #sectionHeader matTooltip={{section.name}}
+                        <p class="section-header tuncate-text" #sectionHeader matTooltip={{section.label}}
                             [matTooltipDisabled]="isTooltipDisabled(sectionHeader)">
                             <i *ngIf="section.icon"
-                                class="fas {{section.icon}} list-label-icon mr10"></i>{{section.name}}
+                                class="fas {{section.icon}} list-label-icon mr10"></i>{{section.label}}
                         </p>
                     </div>
 

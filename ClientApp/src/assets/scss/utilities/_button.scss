@@ -87,6 +87,7 @@
     padding: 10px 15px !important;
     border: none;
     border-radius: 6px;
+    letter-spacing: normal;
 
     @include tablet {
       padding: 8px 14px;
@@ -446,6 +447,7 @@
     padding: var(--ec-button-padding);
     border: none;
     border-radius: 6px;
+    letter-spacing: normal;
 
     .mdc-button__label {
       display: inline-flex;
@@ -1012,7 +1014,7 @@
 
   &-icon-gray-btn {
     display: inline-flex;
-    // align-items: center;
+    align-items: center;
     background-color: transparent;
     padding: var(--ec-button-padding);
     border: none;
@@ -1026,7 +1028,7 @@
     }
 
     +.ec-icon-gray-btn {
-      border-left: 1px solid #d7dfe9;
+      border-left: 1px solid var(--separator-color);
     }
 
     .material-icons {
@@ -1057,7 +1059,7 @@
     }
 
     &:hover:not(:disabled) {
-      background-color: #eaf0f9;
+      background-color: var(--toolbar-btn-hover-bg);
     }
   }
 
@@ -1158,7 +1160,7 @@
     font-weight: 500;
     font-size: 15px !important;
     line-height: 25px;
-    color: var(--main-bg) !important;
+    // color: var(--main-bg) !important;
     padding: var(--ec-button-padding);
     border: none;
     border-radius: 6px !important;
@@ -1167,7 +1169,7 @@
   .sweet-alert-cancel-button {
     color: var(--color-3) !important;
     background: transparent !important;
-    font-weight: 500;
+    font-weight: 400;
     font-size: 14px;
     line-height: 17px;
     padding: var(--ec-button-padding);

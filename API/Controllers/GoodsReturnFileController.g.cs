@@ -1,33 +1,38 @@
 using Microsoft.AspNetCore.Mvc;
 using EMRProj.Models;
-using EMRProj.Data;
-using EMRProj.Filter;
+using EMRProj.Services;
 using EMRProj.Entities;
-using EMRProj.Authorization;
+using EMRProj.Filter;
+using EMRProj.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
-using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
+using EMRProj.Authorization;
 
 namespace EMRProj.Controllers
 {
     /// <summary>
-    /// Controller responsible for managing goodsreturnfile-related operations in the API.
+    /// Controller responsible for managing goodsreturnfile related operations.
     /// </summary>
     /// <remarks>
-    /// This controller provides endpoints for adding, retrieving, updating, and deleting goodsreturnfile information.
+    /// This Controller provides endpoints for adding, retrieving, updating, and deleting goodsreturnfile information.
     /// </remarks>
     [Route("api/goodsreturnfile")]
     [Authorize]
-    public class GoodsReturnFileController : ControllerBase
+    public class GoodsReturnFileController : BaseApiController
     {
-        private readonly EMRProjContext _context;
+        private readonly IGoodsReturnFileService _goodsReturnFileService;
 
-        public GoodsReturnFileController(EMRProjContext context)
+        /// <summary>
+        /// Initializes a new instance of the GoodsReturnFileController class with the specified context.
+        /// </summary>
+        /// <param name="igoodsreturnfileservice">The igoodsreturnfileservice to be used by the controller.</param>
+        public GoodsReturnFileController(IGoodsReturnFileService igoodsreturnfileservice)
         {
-            _context = context;
+            _goodsReturnFileService = igoodsreturnfileservice;
         }
 
-        /// <summary>Adds a new goodsreturnfile to the database</summary>
+        /// <summary>Adds a new goodsreturnfile</summary>
         /// <param name="model">The goodsreturnfile data to be added</param>
         /// <returns>The result of the operation</returns>
         [HttpPost]
@@ -35,12 +40,14 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        [UserAuthorize("GoodsReturnFile",Entitlements.Create)]
-        public IActionResult Post([FromBody] GoodsReturnFile model)
+        [UserAuthorize("GoodsReturnFile", Entitlements.Create)]
+        public async Task<IActionResult> Post([FromBody] GoodsReturnFile model)
         {
-            _context.GoodsReturnFile.Add(model);
-            this._context.SaveChanges();
-            return Ok(new { model.Id });
+            model.TenantId = TenantId;
+            model.CreatedBy = UserId;
+            model.CreatedOn = DateTime.UtcNow;
+            var id = await _goodsReturnFileService.Create(model);
+            return Ok(new { id });
         }
 
         /// <summary>Retrieves a list of goodsreturnfiles based on specified filters</summary>
@@ -52,13 +59,13 @@ namespace EMRProj.Controllers
         /// <param name="sortOrder">The sort order asc or desc.</param>
         /// <returns>The filtered list of goodsreturnfiles</returns>
         [HttpGet]
-        [UserAuthorize("GoodsReturnFile",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
+        [UserAuthorize("GoodsReturnFile", Entitlements.Read)]
+        public async Task<IActionResult> Get([FromQuery] string filters, string searchTerm, int pageNumber = 1, int pageSize = 10, string sortField = null, string sortOrder = "asc")
         {
             List<FilterCriteria> filterCriteria = null;
             if (pageSize < 1)
@@ -76,69 +83,41 @@ namespace EMRProj.Controllers
                 filterCriteria = JsonHelper.Deserialize<List<FilterCriteria>>(filters);
             }
 
-            var query = _context.GoodsReturnFile.IncludeRelated().AsQueryable();
-            int skip = (pageNumber - 1) * pageSize;
-            var result = FilterService<GoodsReturnFile>.ApplyFilter(query, filterCriteria, searchTerm);
-            if (!string.IsNullOrEmpty(sortField))
-            {
-                var parameter = Expression.Parameter(typeof(GoodsReturnFile), "b");
-                var property = Expression.Property(parameter, sortField);
-                var lambda = Expression.Lambda<Func<GoodsReturnFile, object>>(Expression.Convert(property, typeof(object)), parameter);
-                if (sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderBy(lambda);
-                }
-                else if (sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = result.OrderByDescending(lambda);
-                }
-                else
-                {
-                    return BadRequest("Invalid sort order. Use 'asc' or 'desc'.");
-                }
-            }
-
-            var paginatedResult = result.Skip(skip).Take(pageSize).ToList();
-            return Ok(paginatedResult);
+            var result = await _goodsReturnFileService.Get(filterCriteria, searchTerm, pageNumber, pageSize, sortField, sortOrder);
+            return Ok(result);
         }
 
         /// <summary>Retrieves a specific goodsreturnfile by its primary key</summary>
         /// <param name="id">The primary key of the goodsreturnfile</param>
+        /// <param name="fields">The fields is fetch data of selected fields</param>
         /// <returns>The goodsreturnfile data</returns>
         [HttpGet]
         [Route("{id:Guid}")]
-        [UserAuthorize("GoodsReturnFile",Entitlements.Read)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Produces("application/json")]
-        public IActionResult GetById([FromRoute] Guid id)
+        [UserAuthorize("GoodsReturnFile", Entitlements.Read)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, string fields = null)
         {
-            var entityData = _context.GoodsReturnFile.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            return Ok(entityData);
+            var result = await _goodsReturnFileService.GetById( id, fields);
+            return Ok(result);
         }
 
         /// <summary>Deletes a specific goodsreturnfile by its primary key</summary>
         /// <param name="id">The primary key of the goodsreturnfile</param>
         /// <returns>The result of the operation</returns>
         [HttpDelete]
-        [UserAuthorize("GoodsReturnFile",Entitlements.Delete)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [Produces("application/json")]
         [Route("{id:Guid}")]
-        public IActionResult DeleteById([FromRoute] Guid id)
+        [UserAuthorize("GoodsReturnFile", Entitlements.Delete)]
+        public async Task<IActionResult> DeleteById([FromRoute] Guid id)
         {
-            var entityData = _context.GoodsReturnFile.IncludeRelated().FirstOrDefault(entity => entity.Id == id);
-            if (entityData == null)
-            {
-                return NotFound();
-            }
-
-            _context.GoodsReturnFile.Remove(entityData);
-            var status = this._context.SaveChanges();
+            var status = await _goodsReturnFileService.Delete(id);
             return Ok(new { status });
         }
 
@@ -147,22 +126,22 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The goodsreturnfile data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPut]
-        [UserAuthorize("GoodsReturnFile",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] GoodsReturnFile updatedEntity)
+        [UserAuthorize("GoodsReturnFile", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] GoodsReturnFile updatedEntity)
         {
             if (id != updatedEntity.Id)
             {
                 return BadRequest("Mismatched Id");
             }
 
-            this._context.GoodsReturnFile.Update(updatedEntity);
-            var status = this._context.SaveChanges();
+            updatedEntity.TenantId = TenantId;
+            var status = await _goodsReturnFileService.Update(id, updatedEntity);
             return Ok(new { status });
         }
 
@@ -171,7 +150,6 @@ namespace EMRProj.Controllers
         /// <param name="updatedEntity">The goodsreturnfile data to be updated</param>
         /// <returns>The result of the operation</returns>
         [HttpPatch]
-        [UserAuthorize("GoodsReturnFile",Entitlements.Update)]
         [Route("{id:Guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -179,18 +157,12 @@ namespace EMRProj.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [Produces("application/json")]
-        public IActionResult UpdateById(Guid id, [FromBody] JsonPatchDocument<GoodsReturnFile> updatedEntity)
+        [UserAuthorize("GoodsReturnFile", Entitlements.Update)]
+        public async Task<IActionResult> UpdateById(Guid id, [FromBody] JsonPatchDocument<GoodsReturnFile> updatedEntity)
         {
             if (updatedEntity == null)
                 return BadRequest("Patch document is missing.");
-            var existingEntity = this._context.GoodsReturnFile.FirstOrDefault(t => t.Id == id);
-            if (existingEntity == null)
-                return NotFound();
-            updatedEntity.ApplyTo(existingEntity, ModelState);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            this._context.GoodsReturnFile.Update(existingEntity);
-            var status = this._context.SaveChanges();
+            var status = await _goodsReturnFileService.Patch(id, updatedEntity);
             return Ok(new { status });
         }
     }
